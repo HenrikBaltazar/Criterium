@@ -107,21 +107,23 @@ export function runUIValidationTests(): { name: string; passed: boolean; message
     results.push({ name: 'UI Validation 6: Mandatory Presidente Section', passed: false, message: err.message });
   }
 
-  // Test UI 7: Remoção Completa das Tags Redundantes "Deferido" e "Aguardando julgamento"
+  // Test UI 7: Remoção Estrita de Tags Administrativas do TSE (Indeferido, Renúncia, Inapto) — Uso Exclusivo de Experiente e Outsider
   try {
     const renderDeferido = shouldRenderTseStatusBadge('DEFERIDO');
     const renderAguardando = shouldRenderTseStatusBadge('AGUARDANDO_JULGAMENTO');
+    const renderIndeferido = shouldRenderTseStatusBadge('INDEFERIDO');
+    const renderRenuncia = shouldRenderTseStatusBadge('RENUNCIA');
     const renderInapto = shouldRenderTseStatusBadge('INAPTO');
 
-    const passed = !renderDeferido && !renderAguardando && renderInapto;
+    const passed = !renderDeferido && !renderAguardando && !renderIndeferido && !renderRenuncia && !renderInapto;
 
     results.push({
-      name: 'UI Validation 7: Remoção Completa das Tags Redundantes "Deferido" e "Aguardando julgamento"',
+      name: 'UI Validation 7: Restrição Estrita de Tags no Criterium — Omissão de Tags do TSE em Prol de Experiente e Outsider',
       passed,
-      message: `Render Deferido: ${renderDeferido}, Render Aguardando: ${renderAguardando} (Ambos suprimidos), Render Inapto: ${renderInapto}`,
+      message: `Render Deferido: ${renderDeferido}, Render Indeferido: ${renderIndeferido}, Render Renúncia: ${renderRenuncia} (Todas suprimidas estritamente)`,
     });
   } catch (err: any) {
-    results.push({ name: 'UI Validation 7: Complete Aguardando Julgamento Tag Removal', passed: false, message: err.message });
+    results.push({ name: 'UI Validation 7: Restrição Estrita de Tags no Criterium', passed: false, message: err.message });
   }
 
   // Test UI 8: Suporte Completo aos Dados de Perfil DivulgaCandContas (Vices, Eleições, Bens, Propostas)

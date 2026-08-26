@@ -8,22 +8,10 @@ export function formatTseStatus(status?: string): string {
   return status;
 }
 
-export function shouldRenderTseStatusBadge(status?: string): boolean {
-  if (!status) return false;
-  const upper = status.toUpperCase();
-  if (
-    upper === 'DEFERIDO' ||
-    upper === 'CADASTRO_DEFERIDO' ||
-    upper === 'AGUARDANDO_JULGAMENTO' ||
-    upper === 'AGUARDANDO'
-  ) {
-    return false;
-  }
-  const formatted = formatTseStatus(status);
-  if (formatted === 'Deferido' || formatted === 'Aguardando julgamento' || formatted === 'Em processamento') {
-    return false;
-  }
-  return true;
+export function shouldRenderTseStatusBadge(_status?: string): boolean {
+  // TSE administrative status badges (e.g. Indeferido, Renúncia, Inapto) are not valid tags in Criterium.
+  // In Criterium, candidate cards strictly display only Experiente and Outsider tags (and judicial status if present).
+  return false;
 }
 
 export function getJudicialBadgeStatus(
