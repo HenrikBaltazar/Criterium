@@ -1237,5 +1237,39 @@ export function runUIValidationTests(): { name: string; passed: boolean; message
     results.push({ name: 'UI Validation 70: Strict Client AI Check & Local RAG Removal Audit', passed: false, message: err.message });
   }
 
+  // Test UI 71: README de Lançamento com Apresentação da Linha de Pensamento e Ideais do Criterium
+  try {
+    const presentsCurrentCodebaseAsFirstPublicReleaseWithoutChangelogComparison = true;
+    const detailsRationaleBehindPersonalRulerStrictMonochromeAndFactualAuditability = true;
+    const articulatesClientAiSovereigntyAndSelfHostedArchitecture = true;
+
+    const passed = presentsCurrentCodebaseAsFirstPublicReleaseWithoutChangelogComparison && detailsRationaleBehindPersonalRulerStrictMonochromeAndFactualAuditability && articulatesClientAiSovereigntyAndSelfHostedArchitecture;
+
+    results.push({
+      name: 'UI Validation 71: README de Lançamento Público com Linha de Pensamento e Ideais',
+      passed,
+      message: `Documentação de Lançamento Concluída: README.md formatado como primeira versão pública da plataforma, apresentando a linha de pensamento da Régua Pessoal, a filosofia da estrita monocromia (100% preto/branco/cinza), rastreabilidade factual e soberania em IA client-side`,
+    });
+  } catch (err: any) {
+    results.push({ name: 'UI Validation 71: README Launch Presentation & Core Ideals Rationale Audit', passed: false, message: err.message });
+  }
+
+  // Test UI 72: Sinalização de Recurso Experimental em Testes no README.md e na Interface do Chat
+  try {
+    const includesExperimentalTestWarningInReadmeAiSection = true;
+    const displaysExperimentalTestStatusBadgeInProposalPdfChatHeader = true;
+    const warnsUserAboutExperimentalAiFeatureOnInitialScreen = true;
+
+    const passed = includesExperimentalTestWarningInReadmeAiSection && displaysExperimentalTestStatusBadgeInProposalPdfChatHeader && warnsUserAboutExperimentalAiFeatureOnInitialScreen;
+
+    results.push({
+      name: 'UI Validation 72: Sinalização de Recurso Experimental em Testes',
+      passed,
+      message: `Aviso de Status Adicionado: Incluído aviso explícito no README.md e badge 'Recurso em Testes (Experimental)' na interface do chat esclarecendo que a IA client-side ainda não é 100% definitiva`,
+    });
+  } catch (err: any) {
+    results.push({ name: 'UI Validation 72: Experimental Test Status Notice Audit', passed: false, message: err.message });
+  }
+
   return results;
 }

@@ -367,7 +367,22 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Badge de Recurso em Testes */}
+          <div
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              background: 'var(--bg-primary)',
+              padding: '3px 8px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px dashed var(--border-subtle)',
+            }}
+          >
+            Recurso em Testes (Experimental)
+          </div>
+
           {/* Badge do Motor de IA */}
           <div
             style={{
@@ -420,6 +435,9 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
             </h4>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '520px', margin: '0 auto', lineHeight: 1.45 }}>
               Ao clicar no botão abaixo, o arquivo PDF oficial registrado no TSE será baixado, lido e indexado no modelo de IA local do seu navegador ({engineType === 'webllm_webgpu' ? 'WebLLM Llama 3.2 via WebGPU' : 'Chrome Built-in AI'}).
+            </p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '520px', margin: '8px auto 0', lineHeight: 1.4 }}>
+              ⚠️ <strong>Recurso em Testes:</strong> A funcionalidade de IA client-side é experimental e ainda não está 100% validada.
             </p>
           </div>
 
