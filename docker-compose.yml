@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: criterium_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-criterium_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-criterium_secure_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-criterium_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-criterium_user} -d ${POSTGRES_DB:-criterium_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: criterium_api
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-criterium_user}:${POSTGRES_PASSWORD:-criterium_secure_pass_2026}@db:5432/${POSTGRES_DB:-criterium_db}?schema=public"
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-criterium_jwt_secret_key_cloud_ready_2026}
+      NODE_ENV: production
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma db push && node dist/index.js"
+
+  crawler:
+    build:
+      context: ./crawler
+      dockerfile: Dockerfile
+    container_name: criterium_crawler
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-criterium_user}:${POSTGRES_PASSWORD:-criterium_secure_pass_2026}@db:5432/${POSTGRES_DB:-criterium_db}?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    command: >
+      sh -c "npx prisma db push && node dist/index.js"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: criterium_web
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

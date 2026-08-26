@@ -1,0 +1,25 @@
+{
+  "name": "criterium-crawler",
+  "version": "1.0.0",
+  "description": "Ingestion engine and data seeder for Criterium Election System",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "ingest:history": "tsx src/ingestHistoricalAssets.ts",
+    "ingest:performance": "tsx src/ingest_public_performance.ts",
+    "ingest:education": "tsx src/ingest_senate_education.ts",
+    "rolling-sync": "tsx src/rollingSyncEngine.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "prisma": "^5.19.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}

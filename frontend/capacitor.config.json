@@ -1,0 +1,9 @@
+{
+  "appId": "br.com.criterium.app",
+  "appName": "Criterium",
+  "webDir": "dist",
+  "backgroundColor": "#000000",
+  "android": {
+    "allowMixedContent": true
+  }
+}
