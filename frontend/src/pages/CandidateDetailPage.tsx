@@ -46,6 +46,9 @@ import { AttendanceChart } from '../components/AttendanceChart';
 import { getCandidateExperienceTag, isElected, buildTseCandidateUrl } from '../utils/badgeHelper';
 import { AssetEvolutionChart } from '../components/AssetEvolutionChart';
 import { PartyTimeline } from '../components/PartyTimeline';
+import PublicExpensesCard from '../components/PublicExpensesCard';
+import LegislativeWorkCard from '../components/LegislativeWorkCard';
+import ParliamentaryAmendmentsCard from '../components/ParliamentaryAmendmentsCard';
 
 interface CandidateDetailPageProps {
   candidateId: string;
@@ -1670,12 +1673,11 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
               // If candidate has factual PublicPerformance record in DB, build mandates for each factual elected Congress election
               if (hasFactualPP && pp) {
                 const isSenadoPP = pp.source === 'SENADO_FEDERAL';
-                const sourceUrl = pp.sourceUrl || (isSenadoPP ? 'https://www25.senado.leg.br/web/senadores/' : 'https://www.camara.leg.br/deputados/');
 
-                // Find all factual elected Congress elections in candidate history
+                // Find all factual elected Congress elections in candidate history (both Deputado Federal and Senador)
                 const electedElections = priorArray
                   .map(el => ({ el, parsed: parseCongressElection(el) }))
-                  .filter((item): item is { el: any; parsed: NonNullable<ReturnType<typeof parseCongressElection>> } => item.parsed !== null && (isSenadoPP ? item.parsed.isSenado : item.parsed.isCamara));
+                  .filter((item): item is { el: any; parsed: NonNullable<ReturnType<typeof parseCongressElection>> } => item.parsed !== null && (item.parsed.isSenado || item.parsed.isCamara));
 
                 if (electedElections.length > 0) {
                   electedElections.forEach(({ parsed }) => {
@@ -1704,30 +1706,89 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                       periodStr = `Mandato ${yr + 1} – ${yr + 4}`;
                     }
 
+                    // Use strictly factual attendance metrics from official DB record
+                    const attendanceRate = pp.attendanceRate || 0;
+                    const totalSessions = pp.totalSessions || 0;
+                    const attendedSessions = pp.attendedSessions || 0;
+                    const excusedAbsences = pp.excusedAbsences || 0;
+                    const unexcusedAbsences = pp.unexcusedAbsences || 0;
+
+                    // Extract house-specific official profile URLs (Senate vs Chamber) from parsed expensesJson
+                    let parsedExp: any = null;
+                    try { parsedExp = pp.expensesJson ? JSON.parse(pp.expensesJson) : null; } catch (e) {}
+                    const houses: any[] = parsedExp?.houses || (parsedExp ? [parsedExp] : []);
+
+                    let mandateSourceUrl = '';
+                    if (isSenado) {
+                      const senateHouse = houses.find((h: any) => h.source === 'SENADO_FEDERAL');
+                      if (senateHouse?.sourceUrl) {
+                        mandateSourceUrl = senateHouse.sourceUrl;
+                      } else if (pp.source === 'SENADO_FEDERAL' && pp.sourceUrl?.includes('senado.leg.br')) {
+                        mandateSourceUrl = pp.sourceUrl;
+                      } else {
+                        mandateSourceUrl = 'https://www25.senado.leg.br/web/senadores';
+                      }
+                    } else {
+                      const camaraHouse = houses.find((h: any) => h.source === 'CAMARA_DOS_DEPUTADOS');
+                      if (camaraHouse?.sourceUrl) {
+                        mandateSourceUrl = camaraHouse.sourceUrl;
+                      } else if (pp.source === 'CAMARA_DOS_DEPUTADOS' && pp.sourceUrl?.includes('camara.leg.br')) {
+                        mandateSourceUrl = pp.sourceUrl;
+                      } else {
+                        mandateSourceUrl = 'https://www.camara.leg.br/deputados';
+                      }
+                    }
+
                     if (!mandatesList.some(m => m.year === yr)) {
                       mandatesList.push({
                         title: isSenado ? 'Senador da República' : 'Deputado Federal',
                         period: `${periodStr} (Eleição ${yr})`,
                         legislatura: legNum,
-                        source: pp.source,
-                        sourceUrl,
-                        attendanceRate: pp.attendanceRate,
-                        totalSessions: pp.totalSessions,
-                        attendedSessions: pp.attendedSessions,
-                        excusedAbsences: pp.excusedAbsences || 0,
-                        unexcusedAbsences: pp.unexcusedAbsences || 0,
+                        source: isSenado ? 'SENADO_FEDERAL' : 'CAMARA_DOS_DEPUTADOS',
+                        sourceUrl: mandateSourceUrl,
+                        attendanceRate,
+                        totalSessions,
+                        attendedSessions,
+                        excusedAbsences,
+                        unexcusedAbsences,
                         year: yr,
                       });
                     }
                   });
                 } else {
-                  // Fallback for current 2022 mandate if no prior election item matched
+                  // Fallback for current mandate if no prior election item matched
+                  const isSenado = isSenadoPP;
+                  let parsedExp: any = null;
+                  try { parsedExp = pp.expensesJson ? JSON.parse(pp.expensesJson) : null; } catch (e) {}
+                  const houses: any[] = parsedExp?.houses || (parsedExp ? [parsedExp] : []);
+
+                  let mandateSourceUrl = '';
+                  if (isSenado) {
+                    const senateHouse = houses.find((h: any) => h.source === 'SENADO_FEDERAL');
+                    if (senateHouse?.sourceUrl) {
+                      mandateSourceUrl = senateHouse.sourceUrl;
+                    } else if (pp.source === 'SENADO_FEDERAL' && pp.sourceUrl?.includes('senado.leg.br')) {
+                      mandateSourceUrl = pp.sourceUrl;
+                    } else {
+                      mandateSourceUrl = 'https://www25.senado.leg.br/web/senadores';
+                    }
+                  } else {
+                    const camaraHouse = houses.find((h: any) => h.source === 'CAMARA_DOS_DEPUTADOS');
+                    if (camaraHouse?.sourceUrl) {
+                      mandateSourceUrl = camaraHouse.sourceUrl;
+                    } else if (pp.source === 'CAMARA_DOS_DEPUTADOS' && pp.sourceUrl?.includes('camara.leg.br')) {
+                      mandateSourceUrl = pp.sourceUrl;
+                    } else {
+                      mandateSourceUrl = 'https://www.camara.leg.br/deputados';
+                    }
+                  }
+
                   mandatesList.push({
                     title: isSenadoPP ? 'Senador da República' : 'Deputado Federal',
                     period: 'Mandato 2023 – 2026',
                     legislatura: '57ª Legislatura',
                     source: pp.source,
-                    sourceUrl,
+                    sourceUrl: mandateSourceUrl,
                     attendanceRate: pp.attendanceRate,
                     totalSessions: pp.totalSessions,
                     attendedSessions: pp.attendedSessions,
@@ -1868,6 +1929,63 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
               );
             })()}
           </div>
+
+          {/* Card de Uso de Recursos Públicos (Cota CEAP/CEAPS) */}
+          {(() => {
+            if (!candidate.publicPerformance?.expensesJson) return null;
+            try {
+              const expensesData = JSON.parse(candidate.publicPerformance.expensesJson);
+              return (
+                <PublicExpensesCard
+                  expensesData={expensesData}
+                  candidateId={candidate.id}
+                  getRating={getRating}
+                  onRatingChanged={() => loadDetail(true)}
+                  onRequireAuth={onRequireAuth}
+                />
+              );
+            } catch (e) {
+              return null;
+            }
+          })()}
+
+          {/* Card de Trabalho Legislativo (PLs, PECs e Relatorias) */}
+          {(() => {
+            if (!candidate.publicPerformance?.legislativeWorkJson) return null;
+            try {
+              const legislativeData = JSON.parse(candidate.publicPerformance.legislativeWorkJson);
+              return (
+                <LegislativeWorkCard
+                  legislativeData={legislativeData}
+                  candidateId={candidate.id}
+                  getRating={getRating}
+                  onRatingChanged={() => loadDetail(true)}
+                  onRequireAuth={onRequireAuth}
+                />
+              );
+            } catch (e) {
+              return null;
+            }
+          })()}
+
+          {/* Card de Emendas Parlamentares no Orçamento Federal (OGU) */}
+          {(() => {
+            if (!candidate.publicPerformance?.amendmentsJson) return null;
+            try {
+              const amendmentsData = JSON.parse(candidate.publicPerformance.amendmentsJson);
+              return (
+                <ParliamentaryAmendmentsCard
+                  amendmentsData={amendmentsData}
+                  candidateId={candidate.id}
+                  getRating={getRating}
+                  onRatingChanged={() => loadDetail(true)}
+                  onRequireAuth={onRequireAuth}
+                />
+              );
+            } catch (e) {
+              return null;
+            }
+          })()}
         </div>
       )}
 

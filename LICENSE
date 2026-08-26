@@ -1,0 +1,59 @@
+CRITERIUM COMMUNITY LICENSE v1.0 (CCL-1.0)
+Copyright (c) 2026 Criterium Project Authors. All Rights Reserved.
+
+===============================================================================
+1. VISÃO GERAL E FILOSOFIA (SOURCE-AVAILABLE / NON-COMMERCIAL)
+===============================================================================
+O Criterium é um projeto de código aberto para fins de auditoria, transparência
+e colaboração comunitária ("Source-Available"). No entanto, este software NÃO é
+um produto de caridade nem de domínio público irrestrito.
+
+O uso deste código-fonte e de seus binários é regido estritamente pelos termos
+desta Licença.
+
+===============================================================================
+2. DIREITOS CONCEDIDOS (USO PESSOAL, AUDITORIA E CONTRIBUIÇÃO)
+===============================================================================
+É concedida a qualquer pessoa permissão gratuita para:
+  a) Inspecionar, auditar e estudar o código-fonte original.
+  b) Compilar e executar o software localmente para uso pessoal, educativo
+     ou de avaliação não comercial.
+  c) Submeter contribuições de código (Pull Requests) para o repositório
+     oficial do Criterium.
+
+===============================================================================
+3. RESTRIÇÕES E PROIBIÇÕES (USO COMERCIAL E REBRANDING)
+===============================================================================
+Fica ESTRITAMENTE PROIBIDO a qualquer terceiro, sem prévia autorização por escrito
+dos detentores dos direitos autorais:
+  a) Utilizar o software, o código-fonte ou obras derivadas para fins comerciais,
+     monetização direta ou indireta.
+  b) Oferecer o software como serviço (SaaS), serviço hospedado ou plataforma web
+     aberta a terceiros com fins lucrativos ou empresariais.
+  c) Criar produtos comerciais "white-label" baseados no código do Criterium.
+
+===============================================================================
+4. PROTEÇÃO DE MARCA E IDENTIDADE ("CRITERIUM")
+===============================================================================
+Esta licença NÃO concede qualquer direito de uso sobre a marca, nome, logotipo ou
+identidade visual "CRITERIUM".
+  a) É proibido publicar, hospedar ou distribuir instâncias deste software sob o
+     nome "Criterium" ou marcas confundíveis.
+  b) Qualquer uso não autorizado do nome "Criterium" constitui violação de marca.
+
+===============================================================================
+5. CONTRIBUIÇÕES E CRÉDITOS DA COMUNIDADE
+===============================================================================
+Todas as contribuições aceitas no repositório oficial concedem aos autores os
+direitos de incorporação ao código principal. Em contrapartida:
+  a) Todo colaborador terá seu nome e contribuição registrados de forma permanente
+     no arquivo oficial `CONTRIBUTORS.md` e na seção de Créditos da plataforma.
+  b) Os detentores dos direitos originais mantêm o direito exclusivo de licenciamento
+     comercial ("Dual-Licensing").
+
+===============================================================================
+6. ISENÇÃO DE GARANTIA
+===============================================================================
+O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU
+IMPLÍCITA. EM NENHUMA HIPÓTESE OS AUTORES SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO,
+DANOS OU OUTRA RESPONSABILIDADE DECORRENTE DO USO DESTE SOFTWARE.

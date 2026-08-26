@@ -108,3 +108,16 @@ cd tests
 npm test
 ```
 A suíte valida os algoritmos da Régua Pessoal, a auditoria de regressão monocromática em 100% dos arquivos do frontend, roteamento, PWA e fluxos de navegação.
+
+---
+
+## 📜 Licença e Modelo de Contribuição
+
+O **Criterium** é protegido pela [**Criterium Community License v1.0 (CCL-1.0)**](./LICENSE):
+
+- 🔍 **Source-Available**: O código é público e aberto para auditoria, inspeção e contribuição comunitária.
+- 🚫 **Uso Comercial / Rebranding Proibido**: Fica estritamente proibida a exploração comercial, hospedagem em formato SaaS para lucro ou uso não autorizado da marca **Criterium**.
+- 🤝 **Contribuições em Troca de Créditos**: Desenvolvedores e pesquisadores que enviarem Pull Requests aprovados terão seus nomes eternizados com destaque no arquivo [`CONTRIBUTORS.md`](./CONTRIBUTORS.md) e na seção de créditos da plataforma.
+
+Para saber como enviar sua contribuição, consulte o nosso [**Guia de Contribuição (`CONTRIBUTING.md`)**](./CONTRIBUTING.md).
+

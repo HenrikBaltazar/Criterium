@@ -142,18 +142,21 @@ model Candidate {
 }
 
 model PublicPerformance {
-  id                String    @id @default(uuid())
-  candidateId       String    @unique
-  candidate         Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(uuid())
+  candidateId         String    @unique
+  candidate           Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
-  source            String    @default("CAMARA_DOS_DEPUTADOS")
-  totalSessions     Int       @default(0)
-  attendedSessions  Int       @default(0)
-  excusedAbsences   Int       @default(0)
-  unexcusedAbsences Int       @default(0)
-  attendanceRate    Float     @default(0.0)
-  sourceUrl         String?
-  updatedAt         DateTime  @updatedAt
+  source              String    @default("CAMARA_DOS_DEPUTADOS")
+  totalSessions       Int       @default(0)
+  attendedSessions    Int       @default(0)
+  excusedAbsences     Int       @default(0)
+  unexcusedAbsences   Int       @default(0)
+  attendanceRate      Float     @default(0.0)
+  expensesJson        String?   // JSON stringified object of CEAP/CEAPS expenses
+  legislativeWorkJson String?   // JSON stringified object of PLs, PECs & Relatorias
+  amendmentsJson      String?   // JSON stringified object of Portal da Transparência OGU amendments
+  sourceUrl           String?
+  updatedAt           DateTime  @updatedAt
 
   @@map("public_performances")
 }

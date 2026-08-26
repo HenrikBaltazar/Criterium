@@ -84,6 +84,9 @@ export interface PublicPerformance {
   excusedAbsences: number;
   unexcusedAbsences: number;
   attendanceRate: number;
+  expensesJson?: string;
+  legislativeWorkJson?: string;
+  amendmentsJson?: string;
   sourceUrl?: string;
 }
 

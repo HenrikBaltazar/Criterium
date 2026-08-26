@@ -29,6 +29,420 @@ function matchNameTokensStrict(senName: string, dbCandName: string, dbCandPopula
   return senTokens.every(t => fullTokens.has(t));
 }
 
+async function fetchSenateRealExpensesJson(idSenado: string, senatorName: string): Promise<string> {
+  const years = [2024, 2023, 2022, 2021, 2020, 2019];
+
+  const results = await Promise.all(
+    years.map(async (yr) => {
+      try {
+        const url = `https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/${idSenado}/recursos-utilizados?ano=${yr}`;
+        const res: any = await fetchTseJson(url);
+        const senData = res?.data?.[0];
+        if (!senData || !senData.cotas) return null;
+
+        const totalSpent = Math.round(senData.cotas.totalValor || 0);
+        const rawDespesas = senData.cotas.despesas || [];
+        const maxQuota = 0; // Omit estimated quotas (strict zero synthetic policy)
+        const economyRate = 0;
+
+        const categories = rawDespesas
+          .map((d: any) => {
+            const amt = Math.round(d.valor || 0);
+            const pct = totalSpent > 0 ? Math.round((amt / totalSpent) * 1000) / 10 : 0;
+            return {
+              categoryName: d.recurso,
+              amount: amt,
+              percentage: pct
+            };
+          })
+          .filter((c: any) => c.amount > 0)
+          .sort((a: any, b: any) => b.amount - a.amount);
+
+        if (totalSpent > 0 || categories.length > 0) {
+          return {
+            year: yr,
+            totalSpent,
+            maxQuota,
+            economyRate,
+            categories
+          };
+        }
+      } catch (e) {}
+      return null;
+    })
+  );
+
+  const yearlyExpenses = results.filter((r): r is NonNullable<typeof r> => r !== null);
+  yearlyExpenses.sort((a, b) => b.year - a.year);
+
+  if (yearlyExpenses.length === 0) {
+    return JSON.stringify({
+      source: 'SENADO_FEDERAL',
+      sourceUrl: `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${idSenado}`,
+      totalSpent: 0,
+      maxQuota: 0,
+      economyRate: 0,
+      year: 2024,
+      categories: [],
+      yearlyExpenses: []
+    });
+  }
+
+  const grandTotalSpent = yearlyExpenses.reduce((acc, y) => acc + y.totalSpent, 0);
+  const grandTotalQuota = yearlyExpenses.reduce((acc, y) => acc + y.maxQuota, 0);
+  const grandEconomyRate = grandTotalQuota > 0 ? Math.round(((grandTotalQuota - grandTotalSpent) / grandTotalQuota) * 1000) / 10 : 0;
+
+  const catMap: Record<string, number> = {};
+  yearlyExpenses.forEach(y => {
+    y.categories.forEach((c: any) => {
+      catMap[c.categoryName] = (catMap[c.categoryName] || 0) + c.amount;
+    });
+  });
+
+  const consolidatedCategories = Object.entries(catMap)
+    .map(([categoryName, amt]) => {
+      const amount = Math.round(amt);
+      const percentage = grandTotalSpent > 0 ? Math.round((amount / grandTotalSpent) * 1000) / 10 : 0;
+      return { categoryName, amount, percentage };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  const minYear = yearlyExpenses[yearlyExpenses.length - 1].year;
+  const maxYear = yearlyExpenses[0].year;
+
+  return JSON.stringify({
+    source: 'SENADO_FEDERAL',
+    sourceUrl: `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${idSenado}`,
+    totalSpent: grandTotalSpent,
+    maxQuota: grandTotalQuota,
+    economyRate: grandEconomyRate,
+    year: maxYear,
+    categories: consolidatedCategories,
+    yearlyExpenses,
+    totalSummary: {
+      totalSpent: grandTotalSpent,
+      maxQuota: grandTotalQuota,
+      economyRate: grandEconomyRate,
+      yearsRange: `${minYear} – ${maxYear}`,
+      categories: consolidatedCategories
+    }
+  });
+}
+
+async function fetchSenateLegislativeWorkJson(idSenado: string, senatorName: string): Promise<string> {
+  try {
+    const url = `https://legis.senado.leg.br/dadosabertos/senador/${idSenado}/autorias`;
+    const res: any = await fetchTseJson(url);
+    const parlamentar = res?.MateriasAutoriaParlamentar?.Parlamentar;
+    const autorias = parlamentar?.Autorias?.Autoria || [];
+    const arr = Array.isArray(autorias) ? autorias : [autorias];
+
+    const proposals = arr
+      .filter((item: any) => item && item.Materia)
+      .slice(0, 10)
+      .map((item: any, idx: number) => {
+        const mat = item.Materia;
+        const sigla = mat.Sigla || mat.SiglaSubtipoMateria || 'PL';
+        const num = mat.Numero || '';
+        const ano = mat.Ano || '';
+        const idMat = mat.Codigo || mat.IdentificacaoProcesso;
+        const ementa = mat.Ementa || mat.DescricaoIdentificacao || 'Proposição legislativa apresentada no Senado Federal.';
+        const isAuthor = item.IndicadorAutorPrincipal === 'Sim';
+
+        return {
+          id: `sen_${sigla.toLowerCase()}_${idSenado}_${idx + 1}`,
+          type: sigla,
+          number: parseInt(num, 10) || 0,
+          year: parseInt(ano, 10) || 2024,
+          title: `${sigla} ${num}/${ano} — Autoria de ${senatorName}`,
+          summary: ementa,
+          status: isAuthor ? 'Autoria Principal no Senado' : 'Coautoria / Tramitação no Senado',
+          isApproved: mat.Data ? true : false,
+          sourceUrl: `https://www25.senado.leg.br/web/atividade/materias/-/materia/${idMat}`
+        };
+      });
+
+    return JSON.stringify({
+      source: 'SENADO_FEDERAL',
+      sourceUrl: `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${idSenado}`,
+      totalProposals: proposals.length,
+      totalRapporteurs: 0,
+      approvedCount: proposals.filter((p: any) => p.isApproved).length,
+      effectivenessRate: proposals.length > 0 ? Math.round((proposals.filter((p: any) => p.isApproved).length / proposals.length) * 100) : 0,
+      proposals,
+      rapporteurships: []
+    });
+  } catch (e) {
+    return JSON.stringify({
+      source: 'SENADO_FEDERAL',
+      sourceUrl: `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${idSenado}`,
+      totalProposals: 0,
+      totalRapporteurs: 0,
+      approvedCount: 0,
+      effectivenessRate: 0,
+      proposals: [],
+      rapporteurships: []
+    });
+  }
+}
+
+async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string): Promise<string> {
+  const legs = [57, 56];
+  const pagePromises: Promise<any>[] = [];
+
+  for (const leg of legs) {
+    for (let page = 1; page <= 3; page++) {
+      pagePromises.push(
+        fetchTseJson(`https://dadosabertos.camara.leg.br/api/v2/deputados/${idCamara}/despesas?idLegislatura=${leg}&pagina=${page}&itens=100`)
+          .catch(() => null)
+      );
+    }
+  }
+
+  const pageResults = await Promise.all(pagePromises);
+  const allItems: any[] = [];
+  pageResults.forEach(res => {
+    if (res?.dados && Array.isArray(res.dados)) {
+      allItems.push(...res.dados);
+    }
+  });
+
+  const yearMap: Record<number, any[]> = {};
+  allItems.forEach(it => {
+    const yr = it.ano;
+    if (yr) {
+      if (!yearMap[yr]) yearMap[yr] = [];
+      yearMap[yr].push(it);
+    }
+  });
+
+  const sortedYears = Object.keys(yearMap).map(Number).sort((a, b) => b - a);
+  const yearlyExpenses: any[] = [];
+
+  for (const yr of sortedYears) {
+    const items = yearMap[yr];
+    const totalSpent = Math.round(items.reduce((s, i) => s + (i.valorLiquido || 0), 0));
+    const maxQuota = 0; // Omit estimated quotas (strict zero synthetic policy)
+    const economyRate = 0;
+
+    const catMap: Record<string, number> = {};
+    items.forEach(i => {
+      const cat = i.tipoDespesa || 'Outras Despesas';
+      catMap[cat] = (catMap[cat] || 0) + (i.valorLiquido || 0);
+    });
+
+    const categories = Object.entries(catMap)
+      .map(([categoryName, amt]) => {
+        const amount = Math.round(amt);
+        const percentage = totalSpent > 0 ? Math.round((amount / totalSpent) * 1000) / 10 : 0;
+        return { categoryName, amount, percentage };
+      })
+      .sort((a, b) => b.amount - a.amount)
+      .filter(c => c.amount > 0);
+
+    if (totalSpent > 0 || categories.length > 0) {
+      yearlyExpenses.push({
+        year: yr,
+        totalSpent,
+        maxQuota,
+        economyRate,
+        categories
+      });
+    }
+  }
+
+  if (yearlyExpenses.length === 0) {
+    return JSON.stringify({
+      source: 'CAMARA_DOS_DEPUTADOS',
+      sourceUrl: `https://www.camara.leg.br/deputados/${idCamara}`,
+      totalSpent: 0,
+      maxQuota: 0,
+      economyRate: 0,
+      year: 2024,
+      categories: [],
+      yearlyExpenses: []
+    });
+  }
+
+  const grandTotalSpent = yearlyExpenses.reduce((acc, y) => acc + y.totalSpent, 0);
+  const grandTotalQuota = yearlyExpenses.reduce((acc, y) => acc + y.maxQuota, 0);
+  const grandEconomyRate = grandTotalQuota > 0 ? Math.round(((grandTotalQuota - grandTotalSpent) / grandTotalQuota) * 1000) / 10 : 0;
+
+  const catMap: Record<string, number> = {};
+  yearlyExpenses.forEach(y => {
+    y.categories.forEach((c: any) => {
+      catMap[c.categoryName] = (catMap[c.categoryName] || 0) + c.amount;
+    });
+  });
+
+  const consolidatedCategories = Object.entries(catMap)
+    .map(([categoryName, amt]) => {
+      const amount = Math.round(amt);
+      const percentage = grandTotalSpent > 0 ? Math.round((amount / grandTotalSpent) * 1000) / 10 : 0;
+      return { categoryName, amount, percentage };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  const minYear = yearlyExpenses[yearlyExpenses.length - 1].year;
+  const maxYear = yearlyExpenses[0].year;
+
+  return JSON.stringify({
+    source: 'CAMARA_DOS_DEPUTADOS',
+    sourceUrl: `https://www.camara.leg.br/deputados/${idCamara}`,
+    totalSpent: grandTotalSpent,
+    maxQuota: grandTotalQuota,
+    economyRate: grandEconomyRate,
+    year: maxYear,
+    categories: consolidatedCategories,
+    yearlyExpenses,
+    totalSummary: {
+      totalSpent: grandTotalSpent,
+      maxQuota: grandTotalQuota,
+      economyRate: grandEconomyRate,
+      yearsRange: `${minYear} – ${maxYear}`,
+      categories: consolidatedCategories
+    }
+  });
+}
+
+async function fetchCamaraLegislativeWorkJson(idCamara: number, deputyName: string): Promise<string> {
+  try {
+    const url = `https://dadosabertos.camara.leg.br/api/v2/proposicoes?idDeputadoAutor=${idCamara}&siglaTipo=PL,PEC,PLP&ordem=DESC&ordenarPor=id&itens=10`;
+    const res: any = await fetchTseJson(url);
+    const list = res?.dados || [];
+
+    const proposals = list.map((prop: any, idx: number) => {
+      const sigla = prop.siglaTipo || 'PL';
+      const num = prop.numero || 0;
+      const ano = prop.ano || 2024;
+      const ementa = prop.ementa || 'Proposição legislativa apresentada na Câmara dos Deputados.';
+
+      return {
+        id: `cam_${sigla.toLowerCase()}_${idCamara}_${idx + 1}`,
+        type: sigla,
+        number: num,
+        year: ano,
+        title: `${sigla} ${num}/${ano} — Autoria de ${deputyName}`,
+        summary: ementa,
+        status: 'Tramitação Oficial na Câmara dos Deputados',
+        isApproved: false,
+        sourceUrl: `https://www.camara.leg.br/proposicoesWeb/fichadetretamento?idProposicao=${prop.id}`
+      };
+    });
+
+    return JSON.stringify({
+      source: 'CAMARA_DOS_DEPUTADOS',
+      sourceUrl: `https://www.camara.leg.br/deputados/${idCamara}`,
+      totalProposals: proposals.length,
+      totalRapporteurs: 0,
+      approvedCount: proposals.filter((p: any) => p.isApproved).length,
+      effectivenessRate: proposals.length > 0 ? Math.round((proposals.filter((p: any) => p.isApproved).length / proposals.length) * 100) : 0,
+      proposals,
+      rapporteurships: []
+    });
+  } catch (e) {
+    return JSON.stringify({
+      source: 'CAMARA_DOS_DEPUTADOS',
+      sourceUrl: `https://www.camara.leg.br/deputados/${idCamara}`,
+      totalProposals: 0,
+      totalRapporteurs: 0,
+      approvedCount: 0,
+      effectivenessRate: 0,
+      proposals: [],
+      rapporteurships: []
+    });
+  }
+}
+
+async function fetchPortalTransparenciaEmendasJson(autorCode: string): Promise<string | null> {
+  const url = `https://portaldatransparencia.gov.br/emendas/consulta/resultado?paginacaoSimples=true&tamanhoPagina=50&offset=0&direcaoOrdenacao=asc&colunaOrdenacao=autor&autorEmenda=${autorCode}&colunasSelecionadas=linkDetalhamento%2Cano%2CtipoEmenda%2Cautor%2CnumeroEmenda%2CpossuiApoiadorSolicitante%2ClocalidadeDoGasto%2Cfuncao%2Csubfuncao%2Cprograma%2Cacao%2CplanoOrcamentario%2CcodigoEmenda%2CvalorEmpenhado%2CvalorLiquidado%2CvalorPago%2CvalorRestoInscrito%2CvalorRestoCancelado%2CvalorRestoPago`;
+
+  const headers: any = {
+    'accept': 'application/json, text/javascript, */*; q=0.01',
+    'accept-language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7',
+    'cache-control': 'no-cache',
+    'pragma': 'no-cache',
+    'priority': 'u=1, i',
+    'referer': `https://portaldatransparencia.gov.br/emendas/consulta?paginacaoSimples=true&tamanhoPagina=&offset=&direcaoOrdenacao=asc&de=2026&ate=2026&autorEmenda=${autorCode}&colunasSelecionadas=linkDetalhamento%2Cano%2CtipoEmenda%2Cautor%2CnumeroEmenda%2CpossuiApoiadorSolicitante%2ClocalidadeDoGasto%2Cfuncao%2Csubfuncao%2Cprograma%2Cacao%2CplanoOrcamentario%2CcodigoEmenda%2CvalorEmpenhado%2CvalorLiquidado%2CvalorPago%2CvalorRestoInscrito%2CvalorRestoCancelado%2CvalorRestoPago&ordenarPor=autor&direcao=asc`,
+    'sec-ch-ua': '"Not=A?Brand";v="99", "Microsoft Edge";v="151", "Chromium";v="151"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0',
+    'x-requested-with': 'XMLHttpRequest'
+  };
+
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || !text.startsWith('{')) return null;
+    const data = JSON.parse(text);
+    const items = data.data || [];
+    if (!Array.isArray(items) || items.length === 0) return null;
+
+    const parseMoney = (v: any) => {
+      if (typeof v === 'number') return v;
+      if (!v) return 0;
+      return parseFloat(String(v).replace(/\./g, '').replace(',', '.')) || 0;
+    };
+
+    let totalEmpenhado = 0;
+    let totalPago = 0;
+    const funcMap: Record<string, number> = {};
+
+    const formattedItems = items.map((i: any) => {
+      const emp = parseMoney(i.valorEmpenhado);
+      const pago = parseMoney(i.valorPago);
+      totalEmpenhado += emp;
+      totalPago += pago;
+
+      const fn = i.funcao || 'Outras Áreas';
+      funcMap[fn] = (funcMap[fn] || 0) + (pago > 0 ? pago : emp);
+
+      return {
+        codigoEmenda: i.codigoEmenda,
+        ano: Number(i.ano),
+        tipoEmenda: i.tipoEmenda,
+        autor: i.autor,
+        numeroEmenda: i.numeroEmenda,
+        localidadeDoGasto: i.localidadeDoGasto,
+        funcao: fn,
+        subfuncao: i.subfuncao,
+        programa: i.programa,
+        acao: i.acao,
+        valorEmpenhado: emp,
+        valorPago: pago,
+        linkDetalhamento: i.linkDetalhamento ? `https://portaldatransparencia.gov.br/emendas/detalhe${i.linkDetalhamento}` : 'https://portaldatransparencia.gov.br/emendas'
+      };
+    });
+
+    const executionRate = totalEmpenhado > 0 ? Math.round((totalPago / totalEmpenhado) * 1000) / 10 : 0;
+    const totalRef = totalPago > 0 ? totalPago : totalEmpenhado;
+
+    const byFunction = Object.entries(funcMap).map(([funcao, amount]) => ({
+      funcao,
+      totalAmount: Math.round(amount),
+      percentage: totalRef > 0 ? Math.round((amount / totalRef) * 1000) / 10 : 0
+    })).sort((a, b) => b.totalAmount - a.totalAmount);
+
+    return JSON.stringify({
+      source: 'PORTAL_DA_TRANSPARENCIA_GOV_BR',
+      sourceUrl: `https://portaldatransparencia.gov.br/emendas/consulta?autorEmenda=${autorCode}`,
+      totalAmendments: formattedItems.length,
+      totalEmpenhado: Math.round(totalEmpenhado),
+      totalPago: Math.round(totalPago),
+      executionRate,
+      byFunction,
+      items: formattedItems
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function syncPublicPerformance() {
   console.log('\n🏛️ [Fase 4 - Desempenho Público & Mandatos Históricos] Sincronizando assiduidade oficial do Congresso Nacional (53ª a 57ª Legislaturas - Incluindo Senadores de 2014)...');
 
@@ -109,7 +523,11 @@ export async function syncPublicPerformance() {
       const excused = 5;
       const unexcused = 2;
       const rate = 92.4;
-      const sourceUrl = info.UrlPaginaParlamentar || `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${idSenado}`;
+      const sourceUrl = `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${idSenado}`;
+
+      const expensesJson = await fetchSenateRealExpensesJson(String(idSenado), nomeSen);
+      const legislativeWorkJson = await fetchSenateLegislativeWorkJson(String(idSenado), nomeSen);
+      const amendmentsJson = await fetchPortalTransparenciaEmendasJson(String(idSenado));
 
       await prisma.publicPerformance.upsert({
         where: { candidateId: dbCand.id },
@@ -120,6 +538,9 @@ export async function syncPublicPerformance() {
           excusedAbsences: excused,
           unexcusedAbsences: unexcused,
           attendanceRate: rate,
+          expensesJson,
+          legislativeWorkJson,
+          amendmentsJson,
           sourceUrl,
         },
         create: {
@@ -130,12 +551,15 @@ export async function syncPublicPerformance() {
           excusedAbsences: excused,
           unexcusedAbsences: unexcused,
           attendanceRate: rate,
+          expensesJson,
+          legislativeWorkJson,
+          amendmentsJson,
           sourceUrl,
         }
       });
 
       totalSynced++;
-      console.log(`  ✅ [Senado Assiduidade Enriquecida] ${dbCand.popularName} (${dbCand.state}) [Cód Senado: ${idSenado}]`);
+      console.log(`  ✅ [Senado Desempenho & Cota Enriquecida] ${dbCand.popularName} (${dbCand.state}) [Cód Senado: ${idSenado}]`);
     }
   } catch (err: any) {
     console.warn('  ⚠️ [Senado API Error]:', err.message);
@@ -177,7 +601,8 @@ export async function syncPublicPerformance() {
         if (!dbCand) return;
 
         const existing = await prisma.publicPerformance.findUnique({ where: { candidateId: dbCand.id } });
-        if (existing) return; // Senate data takes precedence
+        const camaraExp = JSON.parse(await fetchCamaraRealExpensesJson(idCamara, nomeDep));
+        const camaraLeg = JSON.parse(await fetchCamaraLegislativeWorkJson(idCamara, nomeDep));
 
         const totalSessions = dep.legislatura === 55 ? 96 : 88;
         const attended = dep.legislatura === 55 ? 88 : 81;
@@ -185,6 +610,82 @@ export async function syncPublicPerformance() {
         const unexcused = 3;
         const rate = Math.round((attended / totalSessions) * 1000) / 10;
         const sourceUrl = `https://www.camara.leg.br/deputados/${idCamara}`;
+
+        if (existing) {
+          // Candidate already has a Senate performance record. Merge Chamber data into houses array!
+          let existingExp: any = null;
+          let existingLeg: any = null;
+          try { existingExp = existing.expensesJson ? JSON.parse(existing.expensesJson) : null; } catch (e) {}
+          try { existingLeg = existing.legislativeWorkJson ? JSON.parse(existing.legislativeWorkJson) : null; } catch (e) {}
+
+          // Merge Expenses Houses
+          let mergedHouses: any[] = [];
+          if (existingExp) {
+            if (existingExp.houses && Array.isArray(existingExp.houses)) {
+              mergedHouses = [...existingExp.houses];
+            } else {
+              mergedHouses = [existingExp];
+            }
+          }
+          if (!mergedHouses.some((h: any) => h.source === 'CAMARA_DOS_DEPUTADOS') && camaraExp && (camaraExp.totalSpent > 0 || (camaraExp.yearlyExpenses && camaraExp.yearlyExpenses.length > 0))) {
+            mergedHouses.push(camaraExp);
+          }
+
+          const mergedExpensesJson = JSON.stringify({
+            source: 'CONGRESSO_NACIONAL',
+            sourceUrl: existing.sourceUrl || sourceUrl,
+            houses: mergedHouses.length > 0 ? mergedHouses : [camaraExp],
+            ...mergedHouses[0]
+          });
+
+          // Merge Legislative Proposals
+          let mergedProposals: any[] = [];
+          let mergedRapporteurs: any[] = [];
+          if (existingLeg) {
+            mergedProposals = existingLeg.proposals || [];
+            mergedRapporteurs = existingLeg.rapporteurships || [];
+          }
+          if (camaraLeg && camaraLeg.proposals) {
+            camaraLeg.proposals.forEach((p: any) => {
+              if (!mergedProposals.some((existingP: any) => existingP.id === p.id)) {
+                mergedProposals.push(p);
+              }
+            });
+          }
+
+          const mergedLegislativeWorkJson = JSON.stringify({
+            source: 'CONGRESSO_NACIONAL',
+            sourceUrl: existing.sourceUrl || sourceUrl,
+            totalProposals: mergedProposals.length,
+            totalRapporteurs: mergedRapporteurs.length,
+            approvedCount: mergedProposals.filter((p: any) => p.isApproved).length,
+            effectivenessRate: mergedProposals.length > 0 ? Math.round((mergedProposals.filter((p: any) => p.isApproved).length / mergedProposals.length) * 100) : 0,
+            proposals: mergedProposals,
+            rapporteurships: mergedRapporteurs
+          });
+
+          await prisma.publicPerformance.update({
+            where: { candidateId: dbCand.id },
+            data: {
+              expensesJson: mergedExpensesJson,
+              legislativeWorkJson: mergedLegislativeWorkJson,
+            }
+          });
+          totalSynced++;
+          console.log(`  ✅ [Congresso Nacional - Fusão Senado + Câmara] ${dbCand.popularName} (${dbCand.state}) [Cód Câmara: ${idCamara}]`);
+          return;
+        }
+
+        // Candidate has only Chamber record
+        const expensesJson = JSON.stringify({
+          source: 'CAMARA_DOS_DEPUTADOS',
+          sourceUrl,
+          houses: [camaraExp],
+          ...camaraExp
+        });
+
+        const legislativeWorkJson = JSON.stringify(camaraLeg);
+        const amendmentsJson = await fetchPortalTransparenciaEmendasJson(String(idCamara));
 
         await prisma.publicPerformance.upsert({
           where: { candidateId: dbCand.id },
@@ -195,6 +696,9 @@ export async function syncPublicPerformance() {
             excusedAbsences: excused,
             unexcusedAbsences: unexcused,
             attendanceRate: rate,
+            expensesJson,
+            legislativeWorkJson,
+            amendmentsJson,
             sourceUrl,
           },
           create: {
@@ -205,17 +709,21 @@ export async function syncPublicPerformance() {
             excusedAbsences: excused,
             unexcusedAbsences: unexcused,
             attendanceRate: rate,
+            expensesJson,
+            legislativeWorkJson,
+            amendmentsJson,
             sourceUrl,
           }
         });
         totalSynced++;
+        console.log(`  ✅ [Câmara dos Deputados] ${dbCand.popularName} (${dbCand.state}) [Cód Câmara: ${idCamara}]`);
       }));
     }
   } catch (err: any) {
     console.warn('  ⚠️ [Câmara API Error]:', err.message);
   }
 
-  console.log(`\n🎉 [Fase 4 Concluída] Sincronização de Assiduidade e Mandatos Históricos concluída para ${totalSynced} parlamentares!`);
+  console.log(`\n🎉 [Fase 4 Concluída] Sincronização de Assiduidade e Mandatos Históricos concluída para ${totalSynced} parlamentares!\n`);
 }
 
 if (require.main === module) {
