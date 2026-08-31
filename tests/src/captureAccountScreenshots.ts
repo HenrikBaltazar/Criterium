@@ -5,8 +5,47 @@ import { spawn, ChildProcess } from 'child_process';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function getRealAuthData(): Promise<{ user: any; token: string } | null> {
+  const email = 'eleitor.preview@criterium.app';
+  const password = 'SenhaSegura123!';
+  const name = 'Eleitor Visitante';
+
+  try {
+    const loginRes = await fetch('http://localhost:4000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (loginRes.ok) {
+      const data = await loginRes.json();
+      return { user: data.user, token: data.token };
+    }
+  } catch (e) {}
+
+  try {
+    const regRes = await fetch('http://localhost:4000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
+    });
+    if (regRes.ok) {
+      const data = await regRes.json();
+      return { user: data.user, token: data.token };
+    }
+  } catch (e) {}
+
+  return null;
+}
+
 async function main() {
-  console.log('📸 [Account Screenshots Automation] Capturando telas reais da Conta (Desktop & Mobile)...');
+  console.log('📸 [Account Screenshots Automation] Obotendo autenticação do backend na porta 4000...');
+
+  const authData = await getRealAuthData();
+  if (!authData) {
+    console.error('❌ Erro: Não foi possível obter autenticação válida do backend.');
+    process.exit(1);
+  }
+  console.log(`  ✅ Autenticado como: ${authData.user.name} (${authData.user.email})`);
 
   const frontendDir = '/home/henrik/workspace/Criterium/frontend';
   const assetsDir = path.join(frontendDir, 'src', 'assets');
@@ -28,14 +67,6 @@ async function main() {
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--headless=new'],
     });
 
-    const mockUser = {
-      id: 'demo-user-123',
-      name: 'Eleitor Visitante',
-      email: 'eleitor@criterium.app',
-      createdAt: '2026-01-01T00:00:00.000Z',
-    };
-    const mockToken = 'mock_demo_jwt_token';
-
     // ----------------------------------------
     // 1. CAPTURA DESKTOP (1280 x 800)
     // ----------------------------------------
@@ -44,33 +75,40 @@ async function main() {
     await desktopPage.setViewport({ width: 1280, height: 800 });
     await desktopPage.goto('http://localhost:4173', { waitUntil: 'networkidle0' });
 
-    // Inject mock user state in localStorage and mark onboarding completed
+    // Inject valid user state and JWT token in localStorage
     await desktopPage.evaluate((userObj, tokenStr) => {
       localStorage.setItem('criterium_user', JSON.stringify(userObj));
       localStorage.setItem('criterium_token', tokenStr);
       localStorage.setItem('criterium_onboarding_completed', 'true');
-    }, mockUser, mockToken);
+      localStorage.setItem('criterium_pwa_modal_dismissed', 'true');
+    }, authData.user, authData.token);
 
     await desktopPage.reload({ waitUntil: 'networkidle0' });
-    await delay(1000);
+    await delay(1500);
+
+    // Wait until header shows logged in user
+    await desktopPage.waitForFunction(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      return btns.some(b => (b.textContent || '').includes('Eleitor'));
+    }, { timeout: 5000 });
 
     // Open User Dropdown menu in Header
     await desktopPage.evaluate(() => {
-      const userBtn = Array.from(document.querySelectorAll('button')).find(b =>
+      const btns = Array.from(document.querySelectorAll('button'));
+      const userBtn = btns.find(b =>
         (b.textContent || '').includes('Eleitor') || (b.getAttribute('title') || '').includes('Menu de Conta')
       );
       if (userBtn) (userBtn as HTMLElement).click();
     });
-    await delay(500);
+    await delay(800);
 
     // Click "Minha Conta" inside dropdown
     await desktopPage.evaluate(() => {
-      const accountBtn = Array.from(document.querySelectorAll('button')).find(b =>
-        (b.textContent || '').includes('Minha Conta')
-      );
+      const btns = Array.from(document.querySelectorAll('button'));
+      const accountBtn = btns.find(b => (b.textContent || '').includes('Minha Conta'));
       if (accountBtn) (accountBtn as HTMLElement).click();
     });
-    await delay(2000);
+    await delay(2500);
 
     const desktopPath = path.join(assetsDir, 'account_preview_desktop.png');
     await desktopPage.screenshot({ path: desktopPath });
@@ -88,19 +126,25 @@ async function main() {
       localStorage.setItem('criterium_user', JSON.stringify(userObj));
       localStorage.setItem('criterium_token', tokenStr);
       localStorage.setItem('criterium_onboarding_completed', 'true');
-    }, mockUser, mockToken);
+      localStorage.setItem('criterium_pwa_modal_dismissed', 'true');
+    }, authData.user, authData.token);
 
     await mobilePage.reload({ waitUntil: 'networkidle0' });
-    await delay(1000);
+    await delay(1500);
+
+    // Wait until bottom nav shows logged in user
+    await mobilePage.waitForFunction(() => {
+      const btns = Array.from(document.querySelectorAll('nav button'));
+      return btns.some(b => (b.textContent || '').includes('Eleitor'));
+    }, { timeout: 5000 });
 
     // Click on Account tab in Mobile Bottom Nav
     await mobilePage.evaluate(() => {
-      const userBtn = Array.from(document.querySelectorAll('nav button, button')).find(b =>
-        (b.textContent || '').includes('Eleitor')
-      );
+      const btns = Array.from(document.querySelectorAll('nav button'));
+      const userBtn = btns.find(b => (b.textContent || '').includes('Eleitor'));
       if (userBtn) (userBtn as HTMLElement).click();
     });
-    await delay(2000);
+    await delay(2500);
 
     const mobilePath = path.join(assetsDir, 'account_preview_mobile.png');
     await mobilePage.screenshot({ path: mobilePath });
