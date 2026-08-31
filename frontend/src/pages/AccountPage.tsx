@@ -246,9 +246,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     window.print();
   };
 
-  if (!user) {
-    return null;
-  }
+
 
   const totalEvaluatedCandidates = candidates.filter(
     (c) => (c.score?.details?.userEvaluationsPts || 0) !== 0
