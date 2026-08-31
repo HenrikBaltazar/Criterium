@@ -89,21 +89,25 @@ const AppContent: React.FC = () => {
     setActiveTab('dashboard');
   }
 
+  const isTutorialActive = isWelcomeModalOpen || isGuidedTourOpen;
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header
-        activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          if (tab === 'dashboard') setSelectedCandidateId(null);
-        }}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        onOpenMobileSearch={() => setIsMobileSearchOpen(true)}
-      />
+      <div style={{ pointerEvents: isTutorialActive ? 'none' : 'auto', userSelect: isTutorialActive ? 'none' : 'auto' }}>
+        <Header
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            if (tab === 'dashboard') setSelectedCandidateId(null);
+          }}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          onOpenMobileSearch={() => setIsMobileSearchOpen(true)}
+        />
+      </div>
 
-      {/* Main Content Area */}
-      <main style={{ flex: 1, width: '100%' }}>
+      {/* Main Content Area (Pointer events disabled during onboarding tutorial) */}
+      <main style={{ flex: 1, width: '100%', pointerEvents: isTutorialActive ? 'none' : 'auto', userSelect: isTutorialActive ? 'none' : 'auto' }}>
         {activeTab === 'dashboard' && <DashboardPage onSelectCandidate={handleSelectCandidate} />}
         {activeTab === 'settings' && (user || isGuidedTourOpen) && (
           <SettingsPage

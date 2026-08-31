@@ -19,19 +19,20 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 2500,
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        zIndex: 3000,
+        background: 'radial-gradient(circle at center, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.95) 100%)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '20px',
         animation: 'fadeIn 0.25s ease-out',
+        pointerEvents: 'auto',
       }}
     >
       <div
-        className="glass-card"
+        className="glass-card welcome-modal-card"
         style={{
           width: '100%',
           maxWidth: '480px',
@@ -39,7 +40,7 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
           border: '1px solid var(--border-strong)',
           borderRadius: 'var(--radius-lg)',
           padding: '28px 24px',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.75)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -95,7 +96,7 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
               letterSpacing: '0.04em',
             }}
           >
-            Plataforma de Auditoria Eleitoral Factual
+            Plataforma de Pontuação Pessoal de Candidatos
           </span>
         </div>
 
@@ -108,7 +109,7 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
             marginBottom: '24px',
           }}
         >
-          Seja bem-vindo! O <strong>Criterium</strong> é uma aplicação técnica e 100% monocromática desenvolvida para permitir que você analise candidatos a cargos públicos com base em dados oficiais (TSE, Câmara, Senado e Portal da Transparência) e na sua própria <strong>Régua Pessoal de Pontuação</strong>, sem interferências ou vieses partidários.
+          Seja bem-vindo ao <strong>Criterium</strong>! Esta não é uma ferramenta de pesquisa tradicional, mas sim uma plataforma de pontuação pessoal onde você avalia candidatos com base em dados oficiais do TSE, Câmara e Senado e define sua própria régua de avaliação para formar o seu ranking de voto.
         </p>
 
         {/* Action Buttons */}
@@ -141,7 +142,7 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
             }}
           >
             <HelpCircle size={18} className="desktop-icon-allow" />
-            <span>Ver Tutorial Guiado</span>
+            <span>Ver Tutorial</span>
             <ArrowRight size={16} className="desktop-icon-allow" />
           </button>
 
@@ -160,7 +161,7 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
               transition: 'var(--transition)',
             }}
           >
-            Pular e Acessar Diretamente
+            Pular
           </button>
         </div>
       </div>

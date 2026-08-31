@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Check, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
 
 interface GuidedTutorialTourProps {
   isOpen: boolean;
@@ -17,38 +17,38 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     title: '1. Painel Principal & Filtro de Cargos',
-    subtitle: 'Navegação e Busca Factual de Candidatos',
+    subtitle: 'Navegação e Busca de Candidatos',
     badge: 'Dashboard',
     description:
-      'No Painel Principal você explora os candidatos organizados por cargo disputado (Presidente, Senador, Deputado, etc.). Utilize o seletor de localização para filtrar por estado, a barra de pesquisa para buscar nomes ou partidos e acompanhe a pontuação técnica consolidada.',
+      'No Painel Principal você explora os candidatos organizados por cargo disputado (Presidente, Senador, Deputado, etc.). Utilize o seletor de localização para filtrar por estado, a barra de pesquisa para buscar nomes ou partidos e acompanhe o somatório das suas pontuações.',
   },
   {
-    title: '2. Dossiê Factual do Candidato',
-    subtitle: 'Auditoria Detalhada de Histórico e Gastos',
+    title: '2. Dossiê Completo do Candidato',
+    subtitle: 'Histórico, Bens e Recursos Públicos',
     badge: 'Dossiê Completo',
     description:
-      'Ao selecionar um candidato, você acessa o Dossiê Factual auditável. Explore os Bens Declarados no TSE, Mandatos Históricos, Cota Parlamentar (CEAP/CEAPS), Emendas do OGU e consulte o Plano de Governo via Inteligência Artificial executada diretamente no seu navegador.',
+      'Ao selecionar um candidato, você acessa seu Dossiê detalhado. Explore a Declaração de Bens no TSE, Mandatos Históricos Passados, Gastos da Cota Parlamentar (CEAP/CEAPS), Emendas do OGU, Anotações e o Plano de Governo oficial.',
   },
   {
-    title: '3. Régua Pessoal de Pontuação',
-    subtitle: 'Critérios e Pesos Personalizados pelo Eleitor',
-    badge: 'Pontuação Dinâmica',
+    title: '3. Regras de Pontuação Automática',
+    subtitle: 'Personalização do Somatório do Eleitor',
+    badge: 'Pontuação Automática',
     description:
-      'Na aba Pontuação você configura os pesos numéricos de cada indicador (escolaridade, processos judiciais, execução de emendas, etc.). A plataforma não impõe valores morais: o ranking final é calculado dinamicamente de acordo com as suas próprias regras.',
+      'Na aba Pontuação você configura as regras de pontuação automática para os critérios da plataforma (escolaridade, processos judiciais, execução de emendas, cota parlamentar e anotações). O resultado final é calculado automaticamente segundo as suas regras.',
   },
   {
-    title: '4. Configurações & Estrita Monocromia',
-    subtitle: 'Personalização Visual e Imparcialidade',
-    badge: 'Tema Monocromático',
+    title: '4. Configurações & Preferências',
+    subtitle: 'Ajustes da Interface e Localização',
+    badge: 'Configurações',
     description:
-      'Em Configurações você alterna entre os modos Claro e Escuro (sempre estritamente monocromáticos em preto, branco e tons de cinza para eliminar viés partidário subliminar) e define seu estado ou região de preferência.',
+      'Em Configurações você alterna entre os modos de tema Claro e Escuro, define o seu estado ou região de preferência e acompanha o status dos robôs de dados do sistema.',
   },
   {
-    title: '5. Perfil, Sincronização & Conta',
-    subtitle: 'Armazenamento Seguro na Nuvem',
+    title: '5. Sua Conta, Colinha e Estatísticas',
+    subtitle: 'Recursos Pessoais do Eleitor',
     badge: 'Minha Conta',
     description:
-      'Crie ou acesse sua conta gratuita para salvar suas notas da Régua Pessoal, gerenciar anotações personalizadas vinculadas a candidatos e manter suas preferências sincronizadas em qualquer computador ou smartphone.',
+      'Na sua conta você acessa a sua Colinha Eleitoral para o dia da votação, visualiza suas Estatísticas Pessoais de avaliação e tem a liberdade de remover sua conta a qualquer momento com total privacidade.',
   },
 ];
 
@@ -58,6 +58,15 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
   onNavigateStep,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(0);
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,191 +98,225 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
   const stepData = TOUR_STEPS[currentStep];
   const isLastStep = currentStep === TOUR_STEPS.length - 1;
 
-  return (
-    <div
-      style={{
+  // Mobile position: bottom. Desktop position: center of screen.
+  const tourCardStyle: React.CSSProperties = isMobile
+    ? {
         position: 'fixed',
-        bottom: '24px',
+        bottom: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 2600,
+        zIndex: 3100,
+        width: 'calc(100% - 24px)',
+        maxWidth: '520px',
+        pointerEvents: 'auto',
+        animation: 'slideUp 0.25s ease-out',
+      }
+    : {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 3100,
         width: 'calc(100% - 32px)',
         maxWidth: '540px',
-        animation: 'slideUp 0.3s ease-out',
-      }}
-    >
+        pointerEvents: 'auto',
+        animation: 'fadeIn 0.25s ease-out',
+      };
+
+  return (
+    <>
+      {/* High-contrast Vignette Overlay (Dark edges, dimmed center, block background clicks) */}
       <div
-        className="glass-card"
         style={{
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '20px 22px',
-          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.65)',
-          position: 'relative',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 3000,
+          background:
+            'radial-gradient(circle at center, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.95) 100%)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          pointerEvents: 'auto',
         }}
-      >
-        {/* Header bar of step card */}
+      />
+
+      {/* Floating Tutorial Step Card */}
+      <div style={tourCardStyle}>
         <div
+          className="glass-card"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '12px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '22px 24px',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.75)',
+            position: 'relative',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span
-              className="badge badge-neutral"
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                padding: '3px 8px',
-                borderRadius: 'var(--radius-sm)',
-              }}
-            >
-              Passo {currentStep + 1} de {TOUR_STEPS.length}
-            </span>
-            <span
-              style={{
-                fontSize: '0.76rem',
-                color: 'var(--text-muted)',
-                fontWeight: 600,
-              }}
-            >
-              • {stepData.badge}
-            </span>
-          </div>
-
-          <button
-            onClick={onClose}
+          {/* Header bar of step card */}
+          <div
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px',
-            }}
-            title="Encerrar Tutorial"
-            aria-label="Encerrar Tutorial"
-          >
-            <X size={16} className="desktop-icon-allow" />
-          </button>
-        </div>
-
-        {/* Step Title & Subtitle */}
-        <h3
-          style={{
-            fontSize: '1.05rem',
-            fontWeight: 800,
-            color: 'var(--text-main)',
-            margin: '0 0 4px 0',
-          }}
-        >
-          {stepData.title}
-        </h3>
-        <div
-          style={{
-            fontSize: '0.8rem',
-            color: 'var(--text-muted)',
-            fontWeight: 600,
-            marginBottom: '10px',
-          }}
-        >
-          {stepData.subtitle}
-        </div>
-
-        {/* Description Body */}
-        <p
-          style={{
-            fontSize: '0.85rem',
-            color: 'var(--text-main)',
-            lineHeight: 1.5,
-            marginBottom: '18px',
-          }}
-        >
-          {stepData.description}
-        </p>
-
-        {/* Footer Controls */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingTop: '12px',
-            borderTop: '1px solid var(--border-subtle)',
-          }}
-        >
-          <button
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-subtle)',
-              color: currentStep === 0 ? 'var(--text-muted)' : 'var(--text-main)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              cursor: currentStep === 0 ? 'not-allowed' : 'pointer',
-              opacity: currentStep === 0 ? 0.4 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
+              justifyContent: 'space-between',
+              marginBottom: '12px',
             }}
           >
-            <ChevronLeft size={14} className="desktop-icon-allow" />
-            <span>Anterior</span>
-          </button>
-
-          {/* Dots Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {TOUR_STEPS.map((_, idx) => (
-              <div
-                key={idx}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                className="badge badge-neutral"
                 style={{
-                  width: idx === currentStep ? '16px' : '6px',
-                  height: '6px',
-                  borderRadius: '3px',
-                  background:
-                    idx === currentStep
-                      ? 'var(--text-main)'
-                      : 'var(--border-strong)',
-                  transition: 'all 0.2s',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  padding: '3px 8px',
+                  borderRadius: 'var(--radius-sm)',
                 }}
-              />
-            ))}
+              >
+                Passo {currentStep + 1} de {TOUR_STEPS.length}
+              </span>
+              <span
+                style={{
+                  fontSize: '0.76rem',
+                  color: 'var(--text-muted)',
+                  fontWeight: 600,
+                }}
+              >
+                • {stepData.badge}
+              </span>
+            </div>
+
+            <button
+              onClick={onClose}
+              style={{
+                background: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                transition: 'var(--transition)',
+              }}
+              title="Encerrar Tutorial"
+              aria-label="Encerrar Tutorial"
+            >
+              <X size={14} className="desktop-icon-allow" />
+            </button>
           </div>
 
-          <button
-            onClick={handleNext}
+          {/* Step Title & Subtitle */}
+          <h3
             style={{
-              padding: '6px 16px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--text-main)',
-              color: 'var(--bg-primary)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
+              fontSize: '1.05rem',
+              fontWeight: 800,
+              color: 'var(--text-main)',
+              margin: '0 0 4px 0',
             }}
           >
-            <span>{isLastStep ? 'Concluir' : 'Próximo'}</span>
-            {isLastStep ? (
-              <Check size={14} className="desktop-icon-allow" />
-            ) : (
-              <ChevronRight size={14} className="desktop-icon-allow" />
-            )}
-          </button>
+            {stepData.title}
+          </h3>
+          <div
+            style={{
+              fontSize: '0.78rem',
+              color: 'var(--text-muted)',
+              fontWeight: 600,
+              marginBottom: '12px',
+            }}
+          >
+            {stepData.subtitle}
+          </div>
+
+          {/* Description Body */}
+          <p
+            style={{
+              fontSize: '0.86rem',
+              color: 'var(--text-main)',
+              lineHeight: 1.55,
+              marginBottom: '20px',
+            }}
+          >
+            {stepData.description}
+          </p>
+
+          {/* Footer Controls */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--border-subtle)',
+            }}
+          >
+            <button
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-subtle)',
+                color: currentStep === 0 ? 'var(--text-muted)' : 'var(--text-main)',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: currentStep === 0 ? 'not-allowed' : 'pointer',
+                opacity: currentStep === 0 ? 0.4 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <ChevronLeft size={14} className="desktop-icon-allow" />
+              <span>Anterior</span>
+            </button>
+
+            {/* Dots Indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {TOUR_STEPS.map((_, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: idx === currentStep ? '16px' : '6px',
+                    height: '6px',
+                    borderRadius: '3px',
+                    background:
+                      idx === currentStep
+                        ? 'var(--text-main)'
+                        : 'var(--border-strong)',
+                    transition: 'all 0.2s',
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={handleNext}
+              style={{
+                padding: '6px 18px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--text-main)',
+                color: 'var(--bg-primary)',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>{isLastStep ? 'Concluir' : 'Próximo'}</span>
+              {isLastStep ? (
+                <Check size={14} className="desktop-icon-allow" />
+              ) : (
+                <ChevronRight size={14} className="desktop-icon-allow" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
