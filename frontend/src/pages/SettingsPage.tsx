@@ -192,6 +192,35 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onGoToDashboard }) =
         )}
       </div>
 
+      {/* Tutorial & Apresentação Section */}
+      <div className="glass-card" style={{ padding: '24px', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '1.05rem', margin: '0 0 8px 0', fontWeight: 700 }}>Tutorial de Boas-Vindas</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', lineHeight: 1.5, marginBottom: '16px' }}>
+          Deseja rever a apresentação inicial da plataforma e o tour guiado pelas funcionalidades?
+        </p>
+        <button
+          onClick={() => {
+            localStorage.removeItem('criterium_onboarding_completed');
+            window.location.reload();
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            background: 'var(--text-main)',
+            color: 'var(--bg-primary)',
+            border: 'none',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            borderRadius: 'var(--radius-full)',
+            cursor: 'pointer',
+          }}
+        >
+          <span>Rever Tutorial de Boas-Vindas</span>
+        </button>
+      </div>
+
       {/* Crawler Status Section */}
       <div className="glass-card" style={{ padding: '24px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
