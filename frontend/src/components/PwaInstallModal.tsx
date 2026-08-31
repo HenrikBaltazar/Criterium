@@ -7,22 +7,42 @@ export const PwaInstallModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if user has already dismissed the modal
-    const isDismissed = localStorage.getItem('criterium_pwa_modal_dismissed') === 'true';
-    if (isDismissed) {
-      setIsOpen(false);
-      return;
-    }
+    const checkEligibility = () => {
+      // Check if onboarding tutorial has been completed first (Welcome Modal MUST show before PWA Modal on mobile)
+      const isOnboardingCompleted = localStorage.getItem('criterium_onboarding_completed') === 'true';
+      if (!isOnboardingCompleted) {
+        setIsOpen(false);
+        return;
+      }
 
-    // Check if the current device is a mobile device
-    const isMobileDevice =
-      window.innerWidth <= 768 ||
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      ('ontouchstart' in window && window.innerWidth <= 1024);
+      // Check if user has already dismissed the PWA modal
+      const isDismissed = localStorage.getItem('criterium_pwa_modal_dismissed') === 'true';
+      if (isDismissed) {
+        setIsOpen(false);
+        return;
+      }
 
-    if (isMobileDevice) {
-      setIsOpen(true);
-    }
+      // Check if the current device is a mobile device
+      const isMobileDevice =
+        window.innerWidth <= 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        ('ontouchstart' in window && window.innerWidth <= 1024);
+
+      if (isMobileDevice) {
+        setIsOpen(true);
+      }
+    };
+
+    checkEligibility();
+
+    const handleOnboardingFinish = () => {
+      checkEligibility();
+    };
+
+    window.addEventListener('criterium_onboarding_finished', handleOnboardingFinish);
+    return () => {
+      window.removeEventListener('criterium_onboarding_finished', handleOnboardingFinish);
+    };
   }, []);
 
   const handleDismiss = () => {

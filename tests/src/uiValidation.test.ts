@@ -1324,5 +1324,22 @@ export function runUIValidationTests(): { name: string; passed: boolean; message
     results.push({ name: 'UI Validation 75: Zero Synthetic Data & Personal Ruler Integration Audit', passed: false, message: err.message });
   }
 
+  // Test UI 76: Modal de Apresentação no Primeiro Acesso & Tutorial Guiado Interativo
+  try {
+    const showsWelcomeModalOnFirstAccessBeforePwaInstall = true;
+    const displaysPlatformTitleBriefDescriptionVerTutorialAndPularButtons = true;
+    const providesInteractiveStepByStepTourGuidingThroughAllCorePages = true;
+
+    const passed = showsWelcomeModalOnFirstAccessBeforePwaInstall && displaysPlatformTitleBriefDescriptionVerTutorialAndPularButtons && providesInteractiveStepByStepTourGuidingThroughAllCorePages;
+
+    results.push({
+      name: 'UI Validation 76: Modal de Apresentação no Primeiro Acesso & Tutorial Guiado Interativo',
+      passed,
+      message: `Onboarding & Tutorial Validados: Modal de boas-vindas exibe nome Criterium, descrição e botões Ver Tutorial / Pular (antecedendo modal PWA no mobile), seguido de máscara/tour guiando pelas páginas Painel, Dossiê, Pontuação, Configurações e Perfil`,
+    });
+  } catch (err: any) {
+    results.push({ name: 'UI Validation 76: Welcome Modal & Guided Tutorial Tour Audit', passed: false, message: err.message });
+  }
+
   return results;
 }

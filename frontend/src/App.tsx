@@ -11,6 +11,8 @@ import { AuthModal } from './components/AuthModal';
 import { RankingSidebar } from './components/RankingSidebar';
 import { MobileSearchModal } from './components/MobileSearchModal';
 import { PwaInstallModal } from './components/PwaInstallModal';
+import { WelcomeTutorialModal } from './components/WelcomeTutorialModal';
+import { GuidedTutorialTour } from './components/GuidedTutorialTour';
 import { LayoutDashboard, Trophy, Sliders, User as UserIcon, Award } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -20,6 +22,12 @@ const AppContent: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState<boolean>(false);
+
+  // Onboarding Welcome Modal & Guided Tutorial Tour States
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(() => {
+    return localStorage.getItem('criterium_onboarding_completed') !== 'true';
+  });
+  const [isGuidedTourOpen, setIsGuidedTourOpen] = useState<boolean>(false);
 
   const handleSelectCandidate = (id: string) => {
     setSelectedCandidateId(id);
@@ -33,8 +41,51 @@ const AppContent: React.FC = () => {
     setActiveTab('dashboard');
   };
 
-  // Redirect guest if trying to access protected tabs directly
-  if (!user && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
+  const handleSkipWelcome = () => {
+    localStorage.setItem('criterium_onboarding_completed', 'true');
+    setIsWelcomeModalOpen(false);
+    window.dispatchEvent(new Event('criterium_onboarding_finished'));
+  };
+
+  const handleStartTutorial = () => {
+    setIsWelcomeModalOpen(false);
+    setIsGuidedTourOpen(true);
+  };
+
+  const handleCloseTutorial = () => {
+    localStorage.setItem('criterium_onboarding_completed', 'true');
+    setIsGuidedTourOpen(false);
+    setActiveTab('dashboard');
+    setSelectedCandidateId(null);
+    window.dispatchEvent(new Event('criterium_onboarding_finished'));
+  };
+
+  const handleNavigateStep = (stepIndex: number) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    switch (stepIndex) {
+      case 0: // Dashboard
+        setSelectedCandidateId(null);
+        setActiveTab('dashboard');
+        break;
+      case 1: // Candidate Dossier
+        // Open Acácio Favacho sample candidate dossier or default candidate
+        setSelectedCandidateId('6b0937c2-b3ea-4886-b010-48aa161d430a');
+        setActiveTab('candidate');
+        break;
+      case 2: // Scoring Rules / Régua Pessoal
+        setActiveTab('scoring');
+        break;
+      case 3: // Settings
+        setActiveTab('settings');
+        break;
+      case 4: // Account / Profile
+        setActiveTab('account');
+        break;
+    }
+  };
+
+  // Redirect guest if trying to access protected tabs directly (except during guided tutorial)
+  if (!user && !isGuidedTourOpen && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
     setActiveTab('dashboard');
   }
 
@@ -54,19 +105,19 @@ const AppContent: React.FC = () => {
       {/* Main Content Area */}
       <main style={{ flex: 1, width: '100%' }}>
         {activeTab === 'dashboard' && <DashboardPage onSelectCandidate={handleSelectCandidate} />}
-        {activeTab === 'settings' && user && (
+        {activeTab === 'settings' && (user || isGuidedTourOpen) && (
           <SettingsPage
             onRequireAuth={() => setIsAuthOpen(true)}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'scoring' && user && (
+        {activeTab === 'scoring' && (user || isGuidedTourOpen) && (
           <ScoringPage
             onRequireAuth={() => setIsAuthOpen(true)}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'account' && user && (
+        {activeTab === 'account' && (user || isGuidedTourOpen) && (
           <AccountPage
             onSelectCandidate={handleSelectCandidate}
             onGoToDashboard={(cargoCode) => {
@@ -83,6 +134,19 @@ const AppContent: React.FC = () => {
           />
         )}
       </main>
+
+      {/* First-Time Welcome Modal & Interactive Guided Tutorial Tour */}
+      <WelcomeTutorialModal
+        isOpen={isWelcomeModalOpen}
+        onStartTutorial={handleStartTutorial}
+        onSkip={handleSkipWelcome}
+      />
+
+      <GuidedTutorialTour
+        isOpen={isGuidedTourOpen}
+        onClose={handleCloseTutorial}
+        onNavigateStep={handleNavigateStep}
+      />
 
       {/* Mobile PWA Single-Time Install Modal */}
       <PwaInstallModal />
