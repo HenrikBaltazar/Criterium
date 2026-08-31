@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
 
+const accountPreviewDesktop = new URL('../assets/account_preview_desktop.png', import.meta.url).href;
+const accountPreviewMobile = new URL('../assets/account_preview_mobile.png', import.meta.url).href;
+
 interface GuidedTutorialTourProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,7 +37,7 @@ const TOUR_STEPS: TourStep[] = [
     subtitle: 'Personalização do Somatório do Eleitor',
     badge: 'Pontuação Automática',
     description:
-      'Na aba Pontuação você configura as regras de pontuação automática para os critérios da plataforma (escolaridade, processos judiciais, execução de emendas, cota parlamentar e anotações). O resultado final é calculated automaticamente segundo as suas regras.',
+      'Na aba Pontuação você configura as regras de pontuação automática para os critérios da plataforma (escolaridade, processos judiciais, execução de emendas, cota parlamentar e anotações). O resultado final é calculado automaticamente segundo as suas regras.',
   },
   {
     title: '4. Configurações & Preferências',
@@ -52,36 +55,37 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
+// Doubled heights for mask cutout highlights
 const getSpotlightPosition = (step: number, isMobile: boolean) => {
   if (isMobile) {
     switch (step) {
       case 0: // Header & Toolbar
-        return { top: '6px', left: '8px', width: 'calc(100% - 16px)', height: '115px' };
+        return { top: '6px', left: '8px', width: 'calc(100% - 16px)', height: '230px' };
       case 1: // Candidate Dossier
-        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '200px' };
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '400px' };
       case 2: // Scoring
-        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '190px' };
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '380px' };
       case 3: // Settings
-        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '190px' };
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '380px' };
       case 4: // Account
-        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '210px' };
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '420px' };
       default:
-        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '180px' };
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '360px' };
     }
   } else {
     switch (step) {
       case 0: // Header & Toolbar
-        return { top: '10px', left: '20px', width: 'calc(100% - 40px)', height: '120px' };
+        return { top: '10px', left: '20px', width: 'calc(100% - 40px)', height: '240px' };
       case 1: // Candidate Dossier
-        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '190px' };
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '380px' };
       case 2: // Scoring
-        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '180px' };
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '360px' };
       case 3: // Settings
-        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '180px' };
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '360px' };
       case 4: // Account
-        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '200px' };
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '400px' };
       default:
-        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '180px' };
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '360px' };
     }
   }
 };
@@ -276,6 +280,35 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
           >
             {stepData.subtitle}
           </div>
+
+          {/* Special Device-Specific Account Screenshot Preview on Step 4 */}
+          {currentStep === 4 && (
+            <div
+              style={{
+                marginBottom: '16px',
+                borderRadius: 'var(--radius-md)',
+                overflow: 'hidden',
+                border: '1px solid var(--border-strong)',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+                maxHeight: '180px',
+                background: 'var(--bg-tertiary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <img
+                src={isMobile ? accountPreviewMobile : accountPreviewDesktop}
+                alt="Demonstração da Tela de Conta e Colinha Eleitoral"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'top',
+                }}
+              />
+            </div>
+          )}
 
           {/* Description Body */}
           <p

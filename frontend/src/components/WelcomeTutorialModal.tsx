@@ -87,11 +87,17 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
           <span
             className="badge badge-neutral"
             style={{
-              fontSize: '0.76rem',
+              fontSize: '0.72rem',
               fontWeight: 700,
-              padding: '4px 10px',
+              padding: '6px 12px',
               textTransform: 'uppercase',
-              letterSpacing: '0.04em',
+              letterSpacing: '0.03em',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              textAlign: 'center',
+              lineHeight: 1.35,
+              maxWidth: '100%',
+              display: 'inline-block',
             }}
           >
             Plataforma de Pontuação Pessoal de Candidatos

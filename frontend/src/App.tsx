@@ -15,6 +15,8 @@ import { WelcomeTutorialModal } from './components/WelcomeTutorialModal';
 import { GuidedTutorialTour } from './components/GuidedTutorialTour';
 import { LayoutDashboard, Trophy, Sliders, User as UserIcon, Award } from 'lucide-react';
 
+import { fetchRankings } from './services/api';
+
 const AppContent: React.FC = () => {
   const { user, setSelectedCargo, setSearchQuery } = useApp();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring'>('dashboard');
@@ -67,25 +69,32 @@ const AppContent: React.FC = () => {
         setSelectedCandidateId(null);
         setActiveTab('dashboard');
         break;
-      case 1: // Candidate Dossier
-        // Open Acácio Favacho sample candidate dossier or default candidate
-        setSelectedCandidateId('6b0937c2-b3ea-4886-b010-48aa161d430a');
-        setActiveTab('candidate');
+      case 1: // Candidate Dossier (Dynamic first available candidate from DB)
+        fetchRankings(2026, 'PRESIDENTE')
+          .then((res) => {
+            if (res && Array.isArray(res.leaderboard) && res.leaderboard.length > 0) {
+              setSelectedCandidateId(res.leaderboard[0].id);
+              setActiveTab('candidate');
+            } else {
+              setActiveTab('dashboard');
+            }
+          })
+          .catch(() => setActiveTab('dashboard'));
         break;
       case 2: // Scoring Rules / Régua Pessoal
-        setActiveTab('scoring');
+        if (user) setActiveTab('scoring');
         break;
       case 3: // Settings
-        setActiveTab('settings');
+        if (user) setActiveTab('settings');
         break;
-      case 4: // Account / Profile
-        setActiveTab('account');
+      case 4: // Account / Profile (Handled via preview screenshot card in tour)
+        if (user) setActiveTab('account');
         break;
     }
   };
 
-  // Redirect guest if trying to access protected tabs directly (except during guided tutorial)
-  if (!user && !isGuidedTourOpen && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
+  // Redirect guest if trying to access protected tabs directly
+  if (!user && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
     setActiveTab('dashboard');
   }
 
@@ -109,19 +118,19 @@ const AppContent: React.FC = () => {
       {/* Main Content Area (Pointer events disabled during onboarding tutorial) */}
       <main style={{ flex: 1, width: '100%', pointerEvents: isTutorialActive ? 'none' : 'auto', userSelect: isTutorialActive ? 'none' : 'auto' }}>
         {activeTab === 'dashboard' && <DashboardPage onSelectCandidate={handleSelectCandidate} />}
-        {activeTab === 'settings' && (user || isGuidedTourOpen) && (
+        {activeTab === 'settings' && user && (
           <SettingsPage
             onRequireAuth={() => setIsAuthOpen(true)}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'scoring' && (user || isGuidedTourOpen) && (
+        {activeTab === 'scoring' && user && (
           <ScoringPage
             onRequireAuth={() => setIsAuthOpen(true)}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'account' && (user || isGuidedTourOpen) && (
+        {activeTab === 'account' && user && (
           <AccountPage
             onSelectCandidate={handleSelectCandidate}
             onGoToDashboard={(cargoCode) => {
