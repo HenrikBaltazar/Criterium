@@ -59,6 +59,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   onGoToDashboard,
 }) => {
   const { user, logout, selectedState } = useApp();
+  const currentUser = user || {
+    id: 'visitor-demo',
+    name: 'Visitante (Modo Demonstração)',
+    email: 'visitante@criterium.app',
+  };
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [totalCandidatesInDb, setTotalCandidatesInDb] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -309,14 +314,21 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                 fontWeight: 800,
               }}
             >
-              {user.name.charAt(0).toUpperCase()}
+              {currentUser.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 style={{ margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 800 }}>
-                {user.name}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+                  {currentUser.name}
+                </h2>
+                {!user && (
+                  <span className="badge badge-neutral" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                    Modo Visitante (Demonstração)
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {user.email}
+                {currentUser.email}
               </div>
             </div>
           </div>
@@ -537,7 +549,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               }}
             >
               <div>
-                <strong style={{ color: 'var(--text-muted)' }}>Eleitor:</strong> {user.name}
+                <strong style={{ color: 'var(--text-muted)' }}>Eleitor:</strong> {currentUser.name}
               </div>
               <div>
                 <strong style={{ color: 'var(--text-muted)' }}>CPF / Título:</strong> {voterDetails.cpfOrTitulo || 'Não informado'}
@@ -1019,7 +1031,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             </div>
 
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '16px' }}>
-              Esta ação apaga <strong>todos os seus dados e avaliações</strong> definitivamente. Para confirmar, digite seu e-mail exacto (<strong style={{ color: 'var(--text-main)' }}>{user.email}</strong>) no campo abaixo:
+              Esta ação apaga <strong>todos os seus dados e avaliações</strong> definitivamente. Para confirmar, digite seu e-mail exacto (<strong style={{ color: 'var(--text-main)' }}>{currentUser.email}</strong>) no campo abaixo:
             </p>
 
             <div style={{ marginBottom: '20px' }}>
@@ -1027,7 +1039,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                 type="email"
                 value={typedEmailConfirm}
                 onChange={(e) => setTypedEmailConfirm(e.target.value)}
-                placeholder={user.email}
+                placeholder={currentUser.email}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -1056,17 +1068,17 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               </button>
               <button
                 onClick={handleConfirmDeleteAccount}
-                disabled={typedEmailConfirm.trim().toLowerCase() !== user.email.toLowerCase() || isDeleting}
+                disabled={typedEmailConfirm.trim().toLowerCase() !== currentUser.email.toLowerCase() || isDeleting}
                 style={{
                   padding: '8px 20px',
                   borderRadius: 'var(--radius-full)',
-                  background: typedEmailConfirm.trim().toLowerCase() === user.email.toLowerCase() ? 'var(--text-main)' : 'var(--border-subtle)',
-                  color: typedEmailConfirm.trim().toLowerCase() === user.email.toLowerCase() ? 'var(--bg-primary)' : 'var(--text-muted)',
+                  background: typedEmailConfirm.trim().toLowerCase() === currentUser.email.toLowerCase() ? 'var(--text-main)' : 'var(--border-subtle)',
+                  color: typedEmailConfirm.trim().toLowerCase() === currentUser.email.toLowerCase() ? 'var(--bg-primary)' : 'var(--text-muted)',
                   border: 'none',
                   fontWeight: 800,
                   fontSize: '0.85rem',
-                  cursor: typedEmailConfirm.trim().toLowerCase() === user.email.toLowerCase() && !isDeleting ? 'pointer' : 'not-allowed',
-                  opacity: typedEmailConfirm.trim().toLowerCase() === user.email.toLowerCase() ? 1 : 0.6,
+                  cursor: typedEmailConfirm.trim().toLowerCase() === currentUser.email.toLowerCase() && !isDeleting ? 'pointer' : 'not-allowed',
+                  opacity: typedEmailConfirm.trim().toLowerCase() === currentUser.email.toLowerCase() ? 1 : 0.6,
                 }}
               >
                 {isDeleting ? 'Deletando conta...' : 'Excluir Conta'}
