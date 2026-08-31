@@ -89,9 +89,9 @@ const AppContent: React.FC = () => {
         setSelectedCandidateId(null);
         setActiveTab('settings');
         break;
-      case 4: // Account / Profile (Handled via background screenshot layer)
+      case 4: // Account / Profile (Renders live component seamlessly for all screen sizes)
         setSelectedCandidateId(null);
-        setActiveTab('dashboard');
+        setActiveTab('account');
         break;
     }
   };
@@ -133,7 +133,7 @@ const AppContent: React.FC = () => {
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'account' && user && (
+        {activeTab === 'account' && (user || isGuidedTourOpen) && (
           <AccountPage
             onSelectCandidate={handleSelectCandidate}
             onGoToDashboard={(cargoCode) => {

@@ -164,34 +164,6 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
 
   return (
     <>
-      {/* Device-Specific Account Page Screenshot Layer Rendered BEHIND Modal on Step 4 */}
-      {currentStep === 4 && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 2998,
-            overflow: 'hidden',
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--bg-primary)',
-          }}
-        >
-          <img
-            src={isMobile ? accountPreviewMobile : accountPreviewDesktop}
-            alt="Demonstração da Tela de Conta e Colinha Eleitoral"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'top',
-              opacity: 0.95,
-            }}
-          />
-        </div>
-      )}
 
       {/* Full Page Dark Overlay Base (No blur, sharp visibility) */}
       <div

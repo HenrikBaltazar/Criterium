@@ -58,7 +58,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   onSelectCandidate,
   onGoToDashboard,
 }) => {
-  const { user, logout, selectedState } = useApp();
+  const { user, logout, selectedState, setSelectedCargo } = useApp();
+  const currentUser = user || { id: 'guest-preview', name: 'Eleitor Visitante', email: 'eleitor@criterium.app' };
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [totalCandidatesInDb, setTotalCandidatesInDb] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -309,14 +311,14 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                 fontWeight: 800,
               }}
             >
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'E'}
             </div>
             <div>
               <h2 style={{ margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 800 }}>
-                {user?.name || 'Eleitor'}
+                {currentUser.name}
               </h2>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {user?.email || 'eleitor@criterium.app'}
+                {currentUser.email}
               </div>
             </div>
           </div>
