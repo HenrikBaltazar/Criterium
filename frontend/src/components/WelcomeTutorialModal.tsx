@@ -21,8 +21,6 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
         inset: 0,
         zIndex: 3000,
         background: 'radial-gradient(circle at center, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.95) 100%)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

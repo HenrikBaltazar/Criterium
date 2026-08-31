@@ -160,15 +160,13 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
 
   return (
     <>
-      {/* Full Page Dark Overlay Base */}
+      {/* Full Page Dark Overlay Base (No blur, sharp visibility) */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 2999,
           background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(3px)',
-          WebkitBackdropFilter: 'blur(3px)',
           pointerEvents: 'auto',
         }}
       />
