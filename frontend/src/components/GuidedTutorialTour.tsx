@@ -34,7 +34,7 @@ const TOUR_STEPS: TourStep[] = [
     subtitle: 'Personalização do Somatório do Eleitor',
     badge: 'Pontuação Automática',
     description:
-      'Na aba Pontuação você configura as regras de pontuação automática para os critérios da plataforma (escolaridade, processos judiciais, execução de emendas, cota parlamentar e anotações). O resultado final é calculado automaticamente segundo as suas regras.',
+      'Na aba Pontuação você configura as regras de pontuação automática para os critérios da plataforma (escolaridade, processos judiciais, execução de emendas, cota parlamentar e anotações). O resultado final é calculated automaticamente segundo as suas regras.',
   },
   {
     title: '4. Configurações & Preferências',
@@ -51,6 +51,40 @@ const TOUR_STEPS: TourStep[] = [
       'Na sua conta você acessa a sua Colinha Eleitoral para o dia da votação, visualiza suas Estatísticas Pessoais de avaliação e tem a liberdade de remover sua conta a qualquer momento com total privacidade.',
   },
 ];
+
+const getSpotlightPosition = (step: number, isMobile: boolean) => {
+  if (isMobile) {
+    switch (step) {
+      case 0: // Header & Toolbar
+        return { top: '6px', left: '8px', width: 'calc(100% - 16px)', height: '115px' };
+      case 1: // Candidate Dossier
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '200px' };
+      case 2: // Scoring
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '190px' };
+      case 3: // Settings
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '190px' };
+      case 4: // Account
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '210px' };
+      default:
+        return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '180px' };
+    }
+  } else {
+    switch (step) {
+      case 0: // Header & Toolbar
+        return { top: '10px', left: '20px', width: 'calc(100% - 40px)', height: '120px' };
+      case 1: // Candidate Dossier
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '190px' };
+      case 2: // Scoring
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '180px' };
+      case 3: // Settings
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '180px' };
+      case 4: // Account
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '200px' };
+      default:
+        return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '180px' };
+    }
+  }
+};
 
 export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
   isOpen,
@@ -97,15 +131,16 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
 
   const stepData = TOUR_STEPS[currentStep];
   const isLastStep = currentStep === TOUR_STEPS.length - 1;
+  const spotlightPos = getSpotlightPosition(currentStep, isMobile);
 
   // Mobile position: bottom. Desktop position: center of screen.
   const tourCardStyle: React.CSSProperties = isMobile
     ? {
         position: 'fixed',
-        bottom: '20px',
+        bottom: '16px',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 3100,
+        zIndex: 3200,
         width: 'calc(100% - 24px)',
         maxWidth: '520px',
         pointerEvents: 'auto',
@@ -116,7 +151,7 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        zIndex: 3100,
+        zIndex: 3200,
         width: 'calc(100% - 32px)',
         maxWidth: '540px',
         pointerEvents: 'auto',
@@ -125,17 +160,33 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
 
   return (
     <>
-      {/* High-contrast Vignette Overlay (Dark edges, dimmed center, block background clicks) */}
+      {/* Full Page Dark Overlay Base */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 3000,
-          background:
-            'radial-gradient(circle at center, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.95) 100%)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 2999,
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(3px)',
+          WebkitBackdropFilter: 'blur(3px)',
           pointerEvents: 'auto',
+        }}
+      />
+
+      {/* Dynamic Spotlight Cutout Mask focusing on Toolbar, Header, and active page content */}
+      <div
+        style={{
+          position: 'fixed',
+          top: spotlightPos.top,
+          left: spotlightPos.left,
+          width: spotlightPos.width,
+          height: spotlightPos.height,
+          borderRadius: 'var(--radius-md)',
+          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.82)',
+          border: '2px dashed var(--text-main)',
+          zIndex: 3000,
+          pointerEvents: 'none',
+          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       />
 
@@ -148,7 +199,7 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-lg)',
             padding: '22px 24px',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.75)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85)',
             position: 'relative',
           }}
         >
