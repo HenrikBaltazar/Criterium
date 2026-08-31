@@ -201,7 +201,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectCandidate 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {groupedCandidates.map((section) => {
             const isCollapsed = searchQuery.trim() ? false : Boolean(collapsedCargos[section.cargoCode]);
-            const tseTarget = CARGO_TSE_REGISTERED_TARGETS[section.cargoCode] || section.totalCandidates;
+            const tseTarget = Math.max(CARGO_TSE_REGISTERED_TARGETS[section.cargoCode] || 0, section.totalCandidates);
 
             const visibleLimit = batchLimits[section.cargoCode] || BATCH_SIZE;
             const visibleCandidates = section.candidatesList.slice(0, visibleLimit);

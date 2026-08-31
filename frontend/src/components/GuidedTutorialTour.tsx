@@ -55,12 +55,12 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-// Doubled heights for mask cutout highlights
+// Double height for Dashboard step 0 again (460px mobile / 480px desktop)
 const getSpotlightPosition = (step: number, isMobile: boolean) => {
   if (isMobile) {
     switch (step) {
-      case 0: // Header & Toolbar
-        return { top: '6px', left: '8px', width: 'calc(100% - 16px)', height: '230px' };
+      case 0: // Header & Toolbar + Top Filters (Doubled again: 460px)
+        return { top: '6px', left: '8px', width: 'calc(100% - 16px)', height: '460px' };
       case 1: // Candidate Dossier
         return { top: '65px', left: '10px', width: 'calc(100% - 20px)', height: '400px' };
       case 2: // Scoring
@@ -74,8 +74,8 @@ const getSpotlightPosition = (step: number, isMobile: boolean) => {
     }
   } else {
     switch (step) {
-      case 0: // Header & Toolbar
-        return { top: '10px', left: '20px', width: 'calc(100% - 40px)', height: '240px' };
+      case 0: // Header & Toolbar + Top Filters (Doubled again: 480px)
+        return { top: '10px', left: '20px', width: 'calc(100% - 40px)', height: '480px' };
       case 1: // Candidate Dossier
         return { top: '75px', left: '20px', width: 'calc(100% - 40px)', height: '380px' };
       case 2: // Scoring
@@ -164,6 +164,35 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
 
   return (
     <>
+      {/* Device-Specific Account Page Screenshot Layer Rendered BEHIND Modal on Step 4 */}
+      {currentStep === 4 && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2998,
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--bg-primary)',
+          }}
+        >
+          <img
+            src={isMobile ? accountPreviewMobile : accountPreviewDesktop}
+            alt="Demonstração da Tela de Conta e Colinha Eleitoral"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'top',
+              opacity: 0.95,
+            }}
+          />
+        </div>
+      )}
+
       {/* Full Page Dark Overlay Base (No blur, sharp visibility) */}
       <div
         style={{
@@ -280,35 +309,6 @@ export const GuidedTutorialTour: React.FC<GuidedTutorialTourProps> = ({
           >
             {stepData.subtitle}
           </div>
-
-          {/* Special Device-Specific Account Screenshot Preview on Step 4 */}
-          {currentStep === 4 && (
-            <div
-              style={{
-                marginBottom: '16px',
-                borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
-                border: '1px solid var(--border-strong)',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-                maxHeight: '180px',
-                background: 'var(--bg-tertiary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img
-                src={isMobile ? accountPreviewMobile : accountPreviewDesktop}
-                alt="Demonstração da Tela de Conta e Colinha Eleitoral"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: 'top',
-                }}
-              />
-            </div>
-          )}
 
           {/* Description Body */}
           <p

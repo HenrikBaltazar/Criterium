@@ -82,19 +82,22 @@ const AppContent: React.FC = () => {
           .catch(() => setActiveTab('dashboard'));
         break;
       case 2: // Scoring Rules / Régua Pessoal
-        if (user) setActiveTab('scoring');
+        setSelectedCandidateId(null);
+        setActiveTab('scoring');
         break;
       case 3: // Settings
-        if (user) setActiveTab('settings');
+        setSelectedCandidateId(null);
+        setActiveTab('settings');
         break;
-      case 4: // Account / Profile (Handled via preview screenshot card in tour)
-        if (user) setActiveTab('account');
+      case 4: // Account / Profile (Handled via background screenshot layer)
+        setSelectedCandidateId(null);
+        setActiveTab('dashboard');
         break;
     }
   };
 
-  // Redirect guest if trying to access protected tabs directly
-  if (!user && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
+  // Redirect guest if trying to access protected tabs directly (except during guided tutorial)
+  if (!user && !isGuidedTourOpen && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
     setActiveTab('dashboard');
   }
 
@@ -118,13 +121,13 @@ const AppContent: React.FC = () => {
       {/* Main Content Area (Pointer events disabled during onboarding tutorial) */}
       <main style={{ flex: 1, width: '100%', pointerEvents: isTutorialActive ? 'none' : 'auto', userSelect: isTutorialActive ? 'none' : 'auto' }}>
         {activeTab === 'dashboard' && <DashboardPage onSelectCandidate={handleSelectCandidate} />}
-        {activeTab === 'settings' && user && (
+        {activeTab === 'settings' && (user || isGuidedTourOpen) && (
           <SettingsPage
             onRequireAuth={() => setIsAuthOpen(true)}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'scoring' && user && (
+        {activeTab === 'scoring' && (user || isGuidedTourOpen) && (
           <ScoringPage
             onRequireAuth={() => setIsAuthOpen(true)}
             onGoToDashboard={() => setActiveTab('dashboard')}
