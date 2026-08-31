@@ -12,10 +12,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-criterium_user} -d ${POSTGRES_DB:-criterium_db}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER:-criterium_user} || pg_isready"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal_net
 
   api:
     build:
@@ -35,6 +37,13 @@ services:
         condition: service_healthy
     command: >
       sh -c "npx prisma db push && node dist/index.js"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 4000 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal_net
 
   crawler:
     build:
@@ -48,9 +57,10 @@ services:
       db:
         condition: service_healthy
       api:
-        condition: service_started
-    command: >
-      sh -c "npx prisma db push && node dist/index.js"
+        condition: service_healthy
+    command: node dist/index.js
+    networks:
+      - internal_net
 
   web:
     build:
@@ -62,6 +72,15 @@ services:
       - "80:80"
     depends_on:
       - api
+    networks:
+      - internal_net
+      - cloudflared_net
+
+networks:
+  internal_net:
+    driver: bridge
+  cloudflared_net:
+    external: true
 
 volumes:
   postgres_data:
