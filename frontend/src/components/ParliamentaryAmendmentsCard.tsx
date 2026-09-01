@@ -53,7 +53,7 @@ export const ParliamentaryAmendmentsCard: React.FC<ParliamentaryAmendmentsCardPr
   const currentRating = getRating('PERFORMANCE', 'parliamentary_amendments');
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
   };
 
   return (

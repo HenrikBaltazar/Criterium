@@ -3,6 +3,10 @@ import { fetchTseJson } from './tseFetcher';
 
 const prisma = new PrismaClient();
 
+function round2(num: number): number {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 function normalizeText(text?: string): string {
   if (!text) return '';
   return text
@@ -30,7 +34,7 @@ function matchNameTokensStrict(senName: string, dbCandName: string, dbCandPopula
 }
 
 async function fetchSenateRealExpensesJson(idSenado: string, senatorName: string): Promise<string> {
-  const years = [2024, 2023, 2022, 2021, 2020, 2019];
+  const years = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010, 2009, 2008];
 
   const results = await Promise.all(
     years.map(async (yr) => {
@@ -40,15 +44,15 @@ async function fetchSenateRealExpensesJson(idSenado: string, senatorName: string
         const senData = res?.data?.[0];
         if (!senData || !senData.cotas) return null;
 
-        const totalSpent = Math.round(senData.cotas.totalValor || 0);
         const rawDespesas = senData.cotas.despesas || [];
+        const totalSpent = round2(senData.cotas.totalValor || rawDespesas.reduce((acc: number, d: any) => acc + (d.valor || 0), 0));
         const maxQuota = 0; // Omit estimated quotas (strict zero synthetic policy)
         const economyRate = 0;
 
         const categories = rawDespesas
           .map((d: any) => {
-            const amt = Math.round(d.valor || 0);
-            const pct = totalSpent > 0 ? Math.round((amt / totalSpent) * 1000) / 10 : 0;
+            const amt = round2(d.valor || 0);
+            const pct = totalSpent > 0 ? round2((amt / totalSpent) * 100) : 0;
             return {
               categoryName: d.recurso,
               amount: amt,
@@ -82,15 +86,15 @@ async function fetchSenateRealExpensesJson(idSenado: string, senatorName: string
       totalSpent: 0,
       maxQuota: 0,
       economyRate: 0,
-      year: 2024,
+      year: 2026,
       categories: [],
       yearlyExpenses: []
     });
   }
 
-  const grandTotalSpent = yearlyExpenses.reduce((acc, y) => acc + y.totalSpent, 0);
+  const grandTotalSpent = round2(yearlyExpenses.reduce((acc, y) => acc + y.totalSpent, 0));
   const grandTotalQuota = yearlyExpenses.reduce((acc, y) => acc + y.maxQuota, 0);
-  const grandEconomyRate = grandTotalQuota > 0 ? Math.round(((grandTotalQuota - grandTotalSpent) / grandTotalQuota) * 1000) / 10 : 0;
+  const grandEconomyRate = grandTotalQuota > 0 ? round2(((grandTotalQuota - grandTotalSpent) / grandTotalQuota) * 100) : 0;
 
   const catMap: Record<string, number> = {};
   yearlyExpenses.forEach(y => {
@@ -101,8 +105,8 @@ async function fetchSenateRealExpensesJson(idSenado: string, senatorName: string
 
   const consolidatedCategories = Object.entries(catMap)
     .map(([categoryName, amt]) => {
-      const amount = Math.round(amt);
-      const percentage = grandTotalSpent > 0 ? Math.round((amount / grandTotalSpent) * 1000) / 10 : 0;
+      const amount = round2(amt);
+      const percentage = grandTotalSpent > 0 ? round2((amount / grandTotalSpent) * 100) : 0;
       return { categoryName, amount, percentage };
     })
     .sort((a, b) => b.amount - a.amount);
@@ -153,7 +157,7 @@ async function fetchSenateLegislativeWorkJson(idSenado: string, senatorName: str
           id: `sen_${sigla.toLowerCase()}_${idSenado}_${idx + 1}`,
           type: sigla,
           number: parseInt(num, 10) || 0,
-          year: parseInt(ano, 10) || 2024,
+          year: parseInt(ano, 10) || 2026,
           title: `${sigla} ${num}/${ano} — Autoria de ${senatorName}`,
           summary: ementa,
           status: isAuthor ? 'Autoria Principal no Senado' : 'Coautoria / Tramitação no Senado',
@@ -186,26 +190,50 @@ async function fetchSenateLegislativeWorkJson(idSenado: string, senatorName: str
   }
 }
 
-async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string): Promise<string> {
-  const legs = [57, 56];
-  const pagePromises: Promise<any>[] = [];
-
-  for (const leg of legs) {
-    for (let page = 1; page <= 3; page++) {
-      pagePromises.push(
-        fetchTseJson(`https://dadosabertos.camara.leg.br/api/v2/deputados/${idCamara}/despesas?idLegislatura=${leg}&pagina=${page}&itens=100`)
-          .catch(() => null)
-      );
+async function fetchCamaraJson(url: string): Promise<any> {
+  const headers = {
+    'Accept': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { headers });
+      if (res.status === 429) {
+        await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+        continue;
+      }
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      await new Promise(r => setTimeout(r, 600));
     }
   }
+  return null;
+}
 
-  const pageResults = await Promise.all(pagePromises);
+async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string): Promise<string> {
+  const legs = [57, 56, 55, 54, 53];
   const allItems: any[] = [];
-  pageResults.forEach(res => {
-    if (res?.dados && Array.isArray(res.dados)) {
-      allItems.push(...res.dados);
+
+  for (const leg of legs) {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore && page <= 5) {
+      const url = `https://dadosabertos.camara.leg.br/api/v2/deputados/${idCamara}/despesas?idLegislatura=${leg}&pagina=${page}&itens=100`;
+      const res = await fetchCamaraJson(url);
+      if (res?.dados && Array.isArray(res.dados) && res.dados.length > 0) {
+        allItems.push(...res.dados);
+        if (res.dados.length < 100) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+      await new Promise(r => setTimeout(r, 150));
     }
-  });
+  }
 
   const yearMap: Record<number, any[]> = {};
   allItems.forEach(it => {
@@ -221,7 +249,7 @@ async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string)
 
   for (const yr of sortedYears) {
     const items = yearMap[yr];
-    const totalSpent = Math.round(items.reduce((s, i) => s + (i.valorLiquido || 0), 0));
+    const totalSpent = round2(items.reduce((s, i) => s + (i.valorLiquido || 0), 0));
     const maxQuota = 0; // Omit estimated quotas (strict zero synthetic policy)
     const economyRate = 0;
 
@@ -233,8 +261,8 @@ async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string)
 
     const categories = Object.entries(catMap)
       .map(([categoryName, amt]) => {
-        const amount = Math.round(amt);
-        const percentage = totalSpent > 0 ? Math.round((amount / totalSpent) * 1000) / 10 : 0;
+        const amount = round2(amt);
+        const percentage = totalSpent > 0 ? round2((amount / totalSpent) * 100) : 0;
         return { categoryName, amount, percentage };
       })
       .sort((a, b) => b.amount - a.amount)
@@ -258,15 +286,15 @@ async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string)
       totalSpent: 0,
       maxQuota: 0,
       economyRate: 0,
-      year: 2024,
+      year: 2026,
       categories: [],
       yearlyExpenses: []
     });
   }
 
-  const grandTotalSpent = yearlyExpenses.reduce((acc, y) => acc + y.totalSpent, 0);
+  const grandTotalSpent = round2(yearlyExpenses.reduce((acc, y) => acc + y.totalSpent, 0));
   const grandTotalQuota = yearlyExpenses.reduce((acc, y) => acc + y.maxQuota, 0);
-  const grandEconomyRate = grandTotalQuota > 0 ? Math.round(((grandTotalQuota - grandTotalSpent) / grandTotalQuota) * 1000) / 10 : 0;
+  const grandEconomyRate = grandTotalQuota > 0 ? round2(((grandTotalQuota - grandTotalSpent) / grandTotalQuota) * 100) : 0;
 
   const catMap: Record<string, number> = {};
   yearlyExpenses.forEach(y => {
@@ -277,8 +305,8 @@ async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string)
 
   const consolidatedCategories = Object.entries(catMap)
     .map(([categoryName, amt]) => {
-      const amount = Math.round(amt);
-      const percentage = grandTotalSpent > 0 ? Math.round((amount / grandTotalSpent) * 1000) / 10 : 0;
+      const amount = round2(amt);
+      const percentage = grandTotalSpent > 0 ? round2((amount / grandTotalSpent) * 100) : 0;
       return { categoryName, amount, percentage };
     })
     .sort((a, b) => b.amount - a.amount);
@@ -308,13 +336,13 @@ async function fetchCamaraRealExpensesJson(idCamara: number, deputyName: string)
 async function fetchCamaraLegislativeWorkJson(idCamara: number, deputyName: string): Promise<string> {
   try {
     const url = `https://dadosabertos.camara.leg.br/api/v2/proposicoes?idDeputadoAutor=${idCamara}&siglaTipo=PL,PEC,PLP&ordem=DESC&ordenarPor=id&itens=10`;
-    const res: any = await fetchTseJson(url);
+    const res: any = await fetchCamaraJson(url);
     const list = res?.dados || [];
 
     const proposals = list.map((prop: any, idx: number) => {
       const sigla = prop.siglaTipo || 'PL';
       const num = prop.numero || 0;
-      const ano = prop.ano || 2024;
+      const ano = prop.ano || 2026;
       const ementa = prop.ementa || 'Proposição legislativa apresentada na Câmara dos Deputados.';
 
       return {
@@ -413,27 +441,27 @@ async function fetchPortalTransparenciaEmendasJson(autorCode: string): Promise<s
         subfuncao: i.subfuncao,
         programa: i.programa,
         acao: i.acao,
-        valorEmpenhado: emp,
-        valorPago: pago,
+        valorEmpenhado: round2(emp),
+        valorPago: round2(pago),
         linkDetalhamento: i.linkDetalhamento ? `https://portaldatransparencia.gov.br/emendas/detalhe${i.linkDetalhamento}` : 'https://portaldatransparencia.gov.br/emendas'
       };
     });
 
-    const executionRate = totalEmpenhado > 0 ? Math.round((totalPago / totalEmpenhado) * 1000) / 10 : 0;
+    const executionRate = totalEmpenhado > 0 ? round2((totalPago / totalEmpenhado) * 100) : 0;
     const totalRef = totalPago > 0 ? totalPago : totalEmpenhado;
 
     const byFunction = Object.entries(funcMap).map(([funcao, amount]) => ({
       funcao,
-      totalAmount: Math.round(amount),
-      percentage: totalRef > 0 ? Math.round((amount / totalRef) * 1000) / 10 : 0
+      totalAmount: round2(amount),
+      percentage: totalRef > 0 ? round2((amount / totalRef) * 100) : 0
     })).sort((a, b) => b.totalAmount - a.totalAmount);
 
     return JSON.stringify({
       source: 'PORTAL_DA_TRANSPARENCIA_GOV_BR',
       sourceUrl: `https://portaldatransparencia.gov.br/emendas/consulta?autorEmenda=${autorCode}`,
       totalAmendments: formattedItems.length,
-      totalEmpenhado: Math.round(totalEmpenhado),
-      totalPago: Math.round(totalPago),
+      totalEmpenhado: round2(totalEmpenhado),
+      totalPago: round2(totalPago),
       executionRate,
       byFunction,
       items: formattedItems
@@ -444,7 +472,7 @@ async function fetchPortalTransparenciaEmendasJson(autorCode: string): Promise<s
 }
 
 export async function syncPublicPerformance() {
-  console.log('\n🏛️ [Fase 4 - Desempenho Público & Mandatos Históricos] Sincronizando assiduidade oficial do Congresso Nacional (53ª a 57ª Legislaturas - Incluindo Senadores de 2014)...');
+  console.log('\n🏛️ [Fase 4 - Desempenho Público & Mandatos Históricos] Sincronizando assiduidade oficial do Congresso Nacional (Centavos Exatos + Anos Completos)...');
 
   let totalSynced = 0;
 
@@ -456,7 +484,7 @@ export async function syncPublicPerformance() {
     const priorElections = JSON.parse(candidate.priorElectionsJson || '[]');
     return priorElections.some((el: any) => {
       const yr = Number(el.nrAno);
-      if (yr > 2022) return false;
+      if (yr > 2026) return false;
       const sit = String(el.situacaoTotalizacao || el.descricaoSituacao || el.situacao || el.dsSituacao || el.ds_situacao || '').toUpperCase();
       const isElected = (sit.includes('ELEITO') && !sit.includes('NÃO ELEITO') && !sit.includes('NAO ELEITO')) || sit.includes('MÉDIA') || sit.includes('QP');
       if (!isElected) return false;
@@ -478,7 +506,7 @@ export async function syncPublicPerformance() {
   };
 
   // -------------------------------------------------------------
-  // 1. SENADO FEDERAL (Legislaturas 53, 54, 55, 56, 57 - Prioridade Máxima para Senadores)
+  // 1. SENADO FEDERAL (Legislaturas 53 a 57)
   // -------------------------------------------------------------
   try {
     const senadoEndpoints = [
@@ -515,7 +543,6 @@ export async function syncPublicPerformance() {
       const stateSen = info.UfParlamentar;
 
       const dbCand = findCandidate(nomeSen, stateSen);
-
       if (!dbCand) continue;
 
       const totalSessions = 92;
@@ -566,7 +593,7 @@ export async function syncPublicPerformance() {
   }
 
   // -------------------------------------------------------------
-  // 2. CÂMARA DOS DEPUTADOS (Legislaturas 53 a 57 - Processamento em Lotes de 50)
+  // 2. CÂMARA DOS DEPUTADOS (Legislaturas 53 a 57)
   // -------------------------------------------------------------
   try {
     const camaraLegislaturas = [57, 56, 55, 54, 53];
@@ -575,7 +602,7 @@ export async function syncPublicPerformance() {
     for (const leg of camaraLegislaturas) {
       try {
         const url = `https://dadosabertos.camara.leg.br/api/v2/deputados?idLegislatura=${leg}&itens=1000`;
-        const res: any = await fetchTseJson(url);
+        const res: any = await fetchCamaraJson(url);
         const list = res?.dados || [];
         list.forEach((d: any) => {
           if (d.id) {
@@ -588,7 +615,7 @@ export async function syncPublicPerformance() {
     console.log(`  ├─ [Câmara dos Deputados] ${deputiesMap.size} registros de deputados mapeados em 5 legislaturas. Cruzando com banco...`);
 
     const deputiesArray = Array.from(deputiesMap.values());
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 25;
 
     for (let i = 0; i < deputiesArray.length; i += BATCH_SIZE) {
       const chunk = deputiesArray.slice(i, i + BATCH_SIZE);
@@ -608,17 +635,15 @@ export async function syncPublicPerformance() {
         const attended = dep.legislatura === 55 ? 88 : 81;
         const excused = 5;
         const unexcused = 3;
-        const rate = Math.round((attended / totalSessions) * 1000) / 10;
+        const rate = round2((attended / totalSessions) * 100);
         const sourceUrl = `https://www.camara.leg.br/deputados/${idCamara}`;
 
         if (existing) {
-          // Candidate already has a Senate performance record. Merge Chamber data into houses array!
           let existingExp: any = null;
           let existingLeg: any = null;
           try { existingExp = existing.expensesJson ? JSON.parse(existing.expensesJson) : null; } catch (e) {}
           try { existingLeg = existing.legislativeWorkJson ? JSON.parse(existing.legislativeWorkJson) : null; } catch (e) {}
 
-          // Merge Expenses Houses
           let mergedHouses: any[] = [];
           if (existingExp) {
             if (existingExp.houses && Array.isArray(existingExp.houses)) {
@@ -638,7 +663,6 @@ export async function syncPublicPerformance() {
             ...mergedHouses[0]
           });
 
-          // Merge Legislative Proposals
           let mergedProposals: any[] = [];
           let mergedRapporteurs: any[] = [];
           if (existingLeg) {
@@ -676,7 +700,6 @@ export async function syncPublicPerformance() {
           return;
         }
 
-        // Candidate has only Chamber record
         const expensesJson = JSON.stringify({
           source: 'CAMARA_DOS_DEPUTADOS',
           sourceUrl,
