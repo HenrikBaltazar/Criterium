@@ -241,6 +241,22 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
     if (pdfChunks.length === 0) return [];
 
     const normQuery = normalizeText(query);
+    const isFirstPageQuery = (
+      normQuery.includes('primeira linha') ||
+      normQuery.includes('primeira pagina') ||
+      normQuery.includes('primeiro paragrafo') ||
+      normQuery.includes('inicio do pdf') ||
+      normQuery.includes('comeco do pdf') ||
+      normQuery.includes('inicio do plano') ||
+      normQuery.includes('comeco do plano') ||
+      normQuery.includes('titulo do pdf') ||
+      normQuery.includes('capa do pdf') ||
+      normQuery.includes('primeira palavra') ||
+      normQuery.includes('primeiras palavras') ||
+      normQuery.includes('linha 1') ||
+      normQuery.includes('pagina 1')
+    );
+
     const queryWords = normQuery
       .split(/\s+/)
       .map((w) => w.replace(/[^\w]/g, ''))
@@ -249,6 +265,11 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
     const scored = pdfChunks.map((chunk) => {
       const normChunk = normalizeText(chunk.text);
       let score = 0;
+
+      // Positional boost: if query asks for first page/line, give Page 1 massive score boost!
+      if (isFirstPageQuery && chunk.pageNumber === 1) {
+        score += 100;
+      }
 
       // Exact query phrase match gets massive boost
       if (normQuery.length > 3 && normChunk.includes(normQuery)) {
@@ -282,6 +303,56 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
     }
 
     const normQuery = normalizeText(query);
+
+    // Positional check for "first line", "first page", "beginning", "title"
+    const isFirstLineQuery = (
+      normQuery.includes('primeira linha') ||
+      normQuery.includes('primeira palavra') ||
+      normQuery.includes('primeiras palavras') ||
+      normQuery.includes('linha 1')
+    );
+
+    const isFirstPageOrTitleQuery = (
+      isFirstLineQuery ||
+      normQuery.includes('primeira pagina') ||
+      normQuery.includes('inicio do pdf') ||
+      normQuery.includes('comeco do pdf') ||
+      normQuery.includes('inicio do plano') ||
+      normQuery.includes('comeco do plano') ||
+      normQuery.includes('titulo do pdf') ||
+      normQuery.includes('capa do pdf') ||
+      normQuery.includes('pagina 1')
+    );
+
+    if (isFirstPageOrTitleQuery) {
+      const page1Chunks = pdfChunks.filter((c) => c.pageNumber === 1 || c.pageNumber === 2);
+      let cleanSnippet = '';
+
+      for (const chunk of page1Chunks) {
+        const txt = chunk.text
+          .replace(/[\uE000-\uF8FF\uFFFD\uFEFF]/g, '')
+          .replace(/[^\w\sÀ-ÿ\.,\-\:\/\(\)]/gi, ' ')
+          .replace(/\b[0-9]+\b/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (txt.length > 5) {
+          cleanSnippet = txt.substring(0, 180);
+          break;
+        }
+      }
+
+      if (!cleanSnippet) {
+        cleanSnippet = candidateName ? `Plano de Governo Oficial de ${candidateName}` : 'Plano de Governo Registrado no TSE';
+      }
+
+      if (isFirstLineQuery) {
+        return `A primeira linha (ou cabeçalho de capa) do Plano de Governo Oficial de ${candidateName} [Página 1] é:\n\n"${cleanSnippet}"`;
+      }
+
+      return `O início do Plano de Governo Oficial de ${candidateName} [Página 1] apresenta:\n\n"${cleanSnippet}..."`;
+    }
+
     const queryWords = normQuery.split(/\s+/).filter((w) => w.length > 2 && !STOP_WORDS.has(w));
 
     // Group matching sentences by page
