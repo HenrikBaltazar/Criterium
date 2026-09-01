@@ -68,7 +68,7 @@ export async function enrichSocialLinks() {
       try {
         const uf = candidate.state || 'BR';
         const url = `https://divulgacandcontas.tse.jus.br/divulga/rest/v1/candidatura/buscar/2026/${uf}/20322002026/candidato/${candidate.sqCandidato}`;
-        const detail = await fetchTseJson(url, 1, 1000);
+        const detail: any = await fetchTseJson(url, 1, 1000);
         if (detail?.sites && Array.isArray(detail.sites)) {
           detail.sites.forEach((siteUrl: string) => {
             if (typeof siteUrl === 'string' && !allUrls.includes(siteUrl)) {
