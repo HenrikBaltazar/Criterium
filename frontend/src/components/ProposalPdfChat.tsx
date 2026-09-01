@@ -50,7 +50,13 @@ const STOP_WORDS = new Set([
   'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas', 'de', 'do', 'da', 'dos', 'das',
   'em', 'no', 'na', 'nos', 'nas', 'por', 'pelo', 'pela', 'pelos', 'pelas', 'com',
   'para', 'como', 'que', 'se', 'ou', 'e', 'qual', 'quais', 'sobre', 'tem', 'sua',
-  'seu', 'suas', 'seus', 'mais', 'menos', 'muito', 'muitos', 'quaisquer', 'plano', 'governo'
+  'seu', 'suas', 'seus', 'mais', 'menos', 'muito', 'muitos', 'quaisquer', 'plano', 'governo',
+  'fazer', 'faz', 'fazem', 'feito', 'feita', 'criar', 'cria', 'criacao', 'ter', 'temos', 'tendo',
+  'ser', 'sao', 'seja', 'foi', 'foram', 'estar', 'esta', 'estao', 'pode', 'podem', 'poder',
+  'deve', 'devem', 'dever', 'dizer', 'diz', 'dizem', 'saber', 'sabe', 'ver', 'ir', 'vai', 'vao',
+  'cada', 'tudo', 'todos', 'todas', 'outro', 'outra', 'outros', 'outras', 'algum', 'alguma',
+  'alguns', 'algumas', 'assim', 'entao', 'alem', 'apenas', 'mesmo', 'mesma', 'onde', 'quem',
+  'quando', 'quanto', 'quantos', 'voce', 'voces', 'ele', 'ela', 'eles', 'elas'
 ]);
 
 export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
@@ -275,6 +281,7 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
 
     const scored = pdfChunks.map((chunk) => {
       const normChunk = normalizeText(chunk.text);
+      const chunkWordsSet = new Set(normChunk.split(/[^\w]+/));
       let score = 0;
       let matchedCount = 0;
 
@@ -290,9 +297,9 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
         matchedCount += 2;
       }
 
-      // Keyword occurrences
+      // Keyword occurrences (exact word boundary match)
       queryWords.forEach((word) => {
-        if (normChunk.includes(word)) {
+        if (chunkWordsSet.has(word)) {
           score += 4;
           matchedCount += 1;
         }
@@ -379,8 +386,9 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
       const sentences = chunk.text.split(/(?<=[.!?])\s+/);
       sentences.forEach((sent) => {
         const normSent = normalizeText(sent);
+        const sentWordsSet = new Set(normSent.split(/[^\w]+/));
         if (sent.trim().length > 15) {
-          const hasMatch = queryWords.some((w) => normSent.includes(w)) || (normQuery.length > 3 && normSent.includes(normQuery));
+          const hasMatch = queryWords.some((w) => sentWordsSet.has(w)) || (normQuery.length > 3 && normSent.includes(normQuery));
           if (hasMatch) {
             pageSentences.push({ page: chunk.pageNumber, text: sent.trim() });
           }
@@ -392,9 +400,7 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
     const uniqueSentences = Array.from(new Map(pageSentences.map((s) => [s.text.toLowerCase(), s])).values());
 
     if (uniqueSentences.length === 0) {
-      // Fallback to top chunk snippet
-      const topChunk = relevantChunks[0];
-      return `Segundo o Plano de Governo registrado por ${candidateName} [Página ${topChunk.pageNumber}]:\n\n"${topChunk.text.trim()}"`;
+      return `Esta solicitação está fora do contexto do Plano de Governo Oficial de ${candidateName}. O documento registrado no TSE não contém informações sobre este assunto.`;
     }
 
     const mainPassages = uniqueSentences.slice(0, 3);
