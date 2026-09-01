@@ -525,6 +525,24 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
             </div>
           </div>
         </div>
+
+        <span
+          style={{
+            fontSize: '0.75rem',
+            padding: '4px 10px',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-muted)',
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <Cpu size={12} />
+          <span>{webllmEngineRef.current ? 'Llama 3.2 WebGPU (IA Local)' : 'RAG Factual (PDF.js)'}</span>
+        </span>
       </div>
 
       {/* Tela de Inicialização / Botão Iniciar Chat */}
