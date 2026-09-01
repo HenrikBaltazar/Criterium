@@ -7,6 +7,26 @@ import { startRollingSyncEngine } from './rollingSyncEngine';
 
 const prisma = new PrismaClient();
 
+function buildSocialLinksJson(sites?: string[]): string | null {
+  if (!Array.isArray(sites) || sites.length === 0) return null;
+  const result: Record<string, any> = { links: sites };
+
+  sites.forEach((u) => {
+    if (!u || typeof u !== 'string') return;
+    const lower = u.toLowerCase();
+    if ((lower.includes('instagram.com') || lower.includes('instagr.am')) && !result.instagram) result.instagram = u;
+    else if ((lower.includes('twitter.com') || lower.includes('x.com')) && !result.twitter) result.twitter = u;
+    else if ((lower.includes('facebook.com') || lower.includes('fb.com') || lower.includes('fb.watch')) && !result.facebook) result.facebook = u;
+    else if ((lower.includes('youtube.com') || lower.includes('youtu.be')) && !result.youtube) result.youtube = u;
+    else if (lower.includes('tiktok.com') && !result.tiktok) result.tiktok = u;
+    else if (lower.includes('linkedin.com') && !result.linkedin) result.linkedin = u;
+    else if (lower.includes('flickr.com') && !result.flickr) result.flickr = u;
+    else if (!result.website) result.website = u;
+  });
+
+  return JSON.stringify(result);
+}
+
 const UFS = [
   'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
   'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN',
@@ -131,7 +151,8 @@ async function processCandidateItem(
   const education = detail?.grauInstrucao || 'Não informado';
   const occupation = detail?.ocupacao || 'Não informado';
   const status = detail?.descricaoSituacao || item.descricaoSituacao || 'DEFERIDO';
-  const socialLinksJson = detail?.sites && detail.sites.length > 0 ? JSON.stringify({ website: detail.sites[0], links: detail.sites }) : null;
+  const rawSites = detail?.sites || [];
+  const socialLinksJson = buildSocialLinksJson(rawSites);
   const assetsJson = detail?.bens && detail.bens.length > 0 ? JSON.stringify(detail.bens) : null;
   const vicesJson = detail?.vices && detail.vices.length > 0 ? JSON.stringify(detail.vices) : null;
   
@@ -177,7 +198,7 @@ async function processCandidateItem(
     if ((!existing.netWorth || existing.netWorth === 0) && netWorth > 0) updateData.netWorth = netWorth;
     if ((!existing.education || existing.education === 'Não informado') && education && education !== 'Não informado') updateData.education = education;
     if ((!existing.occupation || existing.occupation === 'Não informado') && occupation && occupation !== 'Não informado') updateData.occupation = occupation;
-    if (!existing.socialLinks && socialLinksJson) updateData.socialLinks = socialLinksJson;
+    if (socialLinksJson && (!existing.socialLinks || existing.socialLinks !== socialLinksJson)) updateData.socialLinks = socialLinksJson;
     if (!existing.assetsJson && assetsJson) updateData.assetsJson = assetsJson;
     if (!existing.vicesJson && vicesJson) updateData.vicesJson = vicesJson;
     if (!existing.priorElectionsJson && priorElectionsJson) updateData.priorElectionsJson = priorElectionsJson;
