@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, RefreshCw, Sparkles, Cpu, FileText, CheckCircle2, Play } from 'lucide-react';
+import { Send, Bot, RefreshCw, Sparkles, Cpu, FileText, CheckCircle2, Play, ExternalLink } from 'lucide-react';
 import { CreateMLCEngine, MLCEngineInterface } from '@mlc-ai/web-llm';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -265,41 +265,47 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
     const scored = pdfChunks.map((chunk) => {
       const normChunk = normalizeText(chunk.text);
       let score = 0;
+      let matchedCount = 0;
 
       // Positional boost: if query asks for first page/line, give Page 1 massive score boost!
       if (isFirstPageQuery && chunk.pageNumber === 1) {
         score += 100;
+        matchedCount += 1;
       }
 
       // Exact query phrase match gets massive boost
       if (normQuery.length > 3 && normChunk.includes(normQuery)) {
         score += 25;
+        matchedCount += 2;
       }
 
       // Keyword occurrences
       queryWords.forEach((word) => {
         if (normChunk.includes(word)) {
           score += 4;
+          matchedCount += 1;
         }
       });
 
-      return { chunk, score };
+      return { chunk, score, matchedCount };
     });
 
     scored.sort((a, b) => b.score - a.score);
 
     const topScored = scored.slice(0, topK);
-    if (topScored[0]?.score === 0) {
-      return pdfChunks.slice(0, topK);
+    // Strict Guardrail: Se a pontuação for 0 ou se o número de palavras-chave coincidentes for inferior a 50% das palavras da pergunta, declara fora do escopo do PDF
+    const minRequiredMatches = isFirstPageQuery ? 1 : Math.max(1, Math.ceil(queryWords.length * 0.5));
+    if (topScored[0]?.score === 0 || (topScored[0]?.matchedCount ?? 0) < minRequiredMatches) {
+      return [];
     }
 
     return topScored.map((s) => s.chunk);
   };
 
-  // Síntese Factual Determinística de Resposta a partir dos Chunks do PDF
+  // Síntese Factual Determinística de Resposta a partir dos Chunks do PDF com Guardrail Estrito
   const generateDeterministicAnswer = (query: string, relevantChunks: PdfChunk[]): string => {
     if (relevantChunks.length === 0) {
-      return `Não foram encontradas propostas sobre este assunto no Plano de Governo de ${candidateName}.`;
+      return `Esta solicitação está fora do contexto do Plano de Governo Oficial de ${candidateName}. O documento registrado no TSE não contém informações sobre este assunto.`;
     }
 
     const normQuery = normalizeText(query);
@@ -410,54 +416,59 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
       const relevantChunks = retrieveRelevantChunks(query, 4);
       const sourcesList = Array.from(new Set(relevantChunks.map((c) => `Página ${c.pageNumber}`)));
 
-      const retrievedContext = relevantChunks
-        .map((c) => `[Página ${c.pageNumber}]: ${c.text}`)
-        .join('\n---\n');
-
       let answerText = '';
 
-      // 1ª Opção: Chrome Built-in AI
-      if (typeof window !== 'undefined' && (window as any).ai?.languageModel) {
-        try {
-          setStatusMessage('Analisando via Chrome Built-in AI...');
-          const session = await (window as any).ai.languageModel.create({
-            systemPrompt: `Você é um assistente factual e imparcial que analisa o Plano de Governo Oficial de ${candidateName}. Responda em português com base estrita no texto fornecido. NUNCA invente nada fora do texto:\n${retrievedContext}`,
-          });
-          answerText = await session.prompt(query);
-        } catch (aiErr) {
-          console.warn('[Criterium PDF Chat] Chrome Built-in AI indisponível:', aiErr);
+      // Guardrail Estrito: Se a consulta for totalmente fora do escopo do PDF, retorna mensagem padrão imediatamente
+      if (relevantChunks.length === 0) {
+        answerText = `Esta solicitação está fora do contexto do Plano de Governo Oficial de ${candidateName}. O documento registrado no TSE não contém informações sobre este assunto.`;
+      } else {
+        const retrievedContext = relevantChunks
+          .map((c) => `[Página ${c.pageNumber}]: ${c.text}`)
+          .join('\n---\n');
+
+        // 1ª Opção: Chrome Built-in AI
+        if (typeof window !== 'undefined' && (window as any).ai?.languageModel) {
+          try {
+            setStatusMessage('Analisando via Chrome Built-in AI...');
+            const session = await (window as any).ai.languageModel.create({
+              systemPrompt: `Você é um assistente estritamente limitado ao Plano de Governo Oficial de ${candidateName}. Responda APENAS com base nos trechos do PDF abaixo e cite as fontes [Página X]. Se não constar, diga que está fora de contexto:\n${retrievedContext}`,
+            });
+            answerText = await session.prompt(query);
+          } catch (aiErr) {
+            console.warn('[Criterium PDF Chat] Chrome Built-in AI indisponível:', aiErr);
+          }
         }
-      }
 
-      // 2ª Opção: WebLLM WebGPU
-      if (!answerText && webllmEngineRef.current) {
-        try {
-          setStatusMessage('Gerando resposta via Llama 3.2 WebGPU...');
-          const completion = await webllmEngineRef.current.chat.completions.create({
-            messages: [
-              {
-                role: 'system',
-                content: `Você é um assistente factual especializado no Plano de Governo Oficial de ${candidateName}. Responda em português de forma clara e imparcial com base EXCLUSIVA nos trechos do PDF abaixo:\n${retrievedContext}`,
-              },
-              {
-                role: 'user',
-                content: query,
-              },
-            ],
-            max_tokens: 400,
-            temperature: 0.1,
-          });
+        // 2ª Opção: WebLLM WebGPU
+        if (!answerText && webllmEngineRef.current) {
+          try {
+            setStatusMessage('Gerando resposta via Llama 3.2 WebGPU...');
+            const completion = await webllmEngineRef.current.chat.completions.create({
+              messages: [
+                {
+                  role: 'system',
+                  content: `Você é um assistente de análise estritamente limitado ao Plano de Governo Oficial de ${candidateName}.\nREGRAS OBRIGATÓRIAS:\n1. Responda à pergunta do usuário APENAS com base nos trechos do PDF abaixo.\n2. Indique a página da fonte diretamente na resposta usando a sintaxe [Página X].\n3. SE A PERGUNTA TRATAR DE QUALQUER ASSUNTO QUE NÃO CONSTE NOS TRECHOS ABAIXO, responda EXATAMENTE: "Esta solicitação está fora do contexto do Plano de Governo Oficial de ${candidateName}. O documento registrado no TSE não contém informações sobre este assunto."\n4. NUNCA invente nada fora dos trechos fornecidos.\n\nTrechos extraídos do PDF:\n${retrievedContext}`,
+                },
+                {
+                  role: 'user',
+                  content: query,
+                },
+              ],
+              max_tokens: 400,
+              temperature: 0.1,
+            });
 
-          answerText = completion.choices[0]?.message?.content || '';
-        } catch (webllmErr) {
-          console.warn('[Criterium PDF Chat] WebLLM WebGPU falhou:', webllmErr);
+            answerText = completion.choices[0]?.message?.content || '';
+          } catch (webllmErr) {
+            console.warn('[Criterium PDF Chat] WebLLM WebGPU falhou:', webllmErr);
+          }
         }
-      }
 
-      // 3ª Opção: Factual RAG Determinístico (Garantia de 100% de Precisão e Zero Alucinação)
-      if (!answerText) {
-        setStatusMessage('Sintetizando resposta factual com base no PDF...');
-        answerText = generateDeterministicAnswer(query, relevantChunks);
+        // 3ª Opção: Factual RAG Determinístico (Garantia de 100% de Precisão e Zero Alucinação)
+        if (!answerText) {
+          setStatusMessage('Sintetizando resposta factual com base no PDF...');
+          answerText = generateDeterministicAnswer(query, relevantChunks);
+        }
       }
 
       const assistantMsg: Message = {
@@ -486,6 +497,53 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
       setIsProcessing(false);
       setStatusMessage('');
     }
+  };
+
+  // Renderizador de mensagens com links auditáveis diretamente inline nas páginas citadas
+  const renderFormattedMessage = (text: string) => {
+    const parts = text.split(/(\[Página \d+\])/g);
+
+    return parts.map((part, idx) => {
+      const match = part.match(/^\[Página (\d+)\]$/);
+      if (match) {
+        const pageNum = match[1];
+        const auditUrl = pdfUrl ? `${pdfUrl}#page=${pageNum}` : undefined;
+        return (
+          <a
+            key={idx}
+            href={auditUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (!auditUrl) e.preventDefault();
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--text-main)',
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-subtle)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              marginLeft: '4px',
+              marginRight: '2px',
+              cursor: auditUrl ? 'pointer' : 'default',
+              transition: 'var(--transition)',
+            }}
+            title={auditUrl ? `Clique para abrir e auditar a Página ${pageNum} do PDF original no TSE` : `Fonte: Página ${pageNum}`}
+          >
+            <FileText size={11} color="var(--text-muted)" />
+            <span>Página {pageNum} (Auditar)</span>
+            <ExternalLink size={10} color="var(--text-muted)" />
+          </a>
+        );
+      }
+      return <span key={idx}>{part}</span>;
+    });
   };
 
   return (
@@ -656,7 +714,7 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
                   whiteSpace: 'pre-wrap',
                 }}
               >
-                <div>{msg.text}</div>
+                <div>{renderFormattedMessage(msg.text)}</div>
                 {msg.sources && msg.sources.length > 0 && (
                   <div
                     style={{
