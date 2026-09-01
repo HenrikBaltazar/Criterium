@@ -21,9 +21,16 @@ const AppContent: React.FC = () => {
   const { user, setSelectedCargo, setSearchQuery } = useApp();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring'>('dashboard');
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
-  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
+  const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'register' }>({
+    isOpen: false,
+    mode: 'login',
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState<boolean>(false);
+
+  const handleOpenLogin = () => setAuthModal({ isOpen: true, mode: 'login' });
+  const handleOpenRegister = () => setAuthModal({ isOpen: true, mode: 'register' });
+  const handleCloseAuthModal = () => setAuthModal((prev) => ({ ...prev, isOpen: false }));
 
   // Onboarding Welcome Modal & Guided Tutorial Tour States
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState<boolean>(() => {
@@ -112,7 +119,8 @@ const AppContent: React.FC = () => {
             setActiveTab(tab);
             if (tab === 'dashboard') setSelectedCandidateId(null);
           }}
-          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenAuth={handleOpenLogin}
+          onOpenRegister={handleOpenRegister}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onOpenMobileSearch={() => setIsMobileSearchOpen(true)}
         />
@@ -120,16 +128,21 @@ const AppContent: React.FC = () => {
 
       {/* Main Content Area (Pointer events disabled during onboarding tutorial) */}
       <main style={{ flex: 1, width: '100%', pointerEvents: isTutorialActive ? 'none' : 'auto', userSelect: isTutorialActive ? 'none' : 'auto' }}>
-        {activeTab === 'dashboard' && <DashboardPage onSelectCandidate={handleSelectCandidate} />}
+        {activeTab === 'dashboard' && (
+          <DashboardPage
+            onSelectCandidate={handleSelectCandidate}
+            onRequireAuth={handleOpenRegister}
+          />
+        )}
         {activeTab === 'settings' && (user || isGuidedTourOpen) && (
           <SettingsPage
-            onRequireAuth={() => setIsAuthOpen(true)}
+            onRequireAuth={handleOpenRegister}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
         {activeTab === 'scoring' && (user || isGuidedTourOpen) && (
           <ScoringPage
-            onRequireAuth={() => setIsAuthOpen(true)}
+            onRequireAuth={handleOpenRegister}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
@@ -146,7 +159,7 @@ const AppContent: React.FC = () => {
           <CandidateDetailPage
             candidateId={selectedCandidateId}
             onBack={handleBackToDashboard}
-            onRequireAuth={() => setIsAuthOpen(true)}
+            onRequireAuth={handleOpenRegister}
           />
         )}
       </main>
@@ -183,7 +196,11 @@ const AppContent: React.FC = () => {
       />
 
       {/* Auth Modal */}
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={handleCloseAuthModal}
+        initialMode={authModal.mode}
+      />
 
       {/* Mobile Sticky Bottom Navigation Bar */}
       <nav
@@ -193,18 +210,22 @@ const AppContent: React.FC = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '56px',
+          zIndex: 100,
           background: 'var(--bg-glass)',
           backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           borderTop: '1px solid var(--border-subtle)',
           display: 'flex',
           justifyContent: 'space-around',
           alignItems: 'center',
-          zIndex: 90,
+          height: '56px',
         }}
       >
         <button
-          onClick={() => { setActiveTab('dashboard'); setSelectedCandidateId(null); }}
+          onClick={() => {
+            setSelectedCandidateId(null);
+            setActiveTab('dashboard');
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -222,7 +243,13 @@ const AppContent: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setIsSidebarOpen(true)}
+          onClick={() => {
+            if (!user) {
+              handleOpenRegister();
+            } else {
+              setIsSidebarOpen(true);
+            }
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -245,7 +272,7 @@ const AppContent: React.FC = () => {
               setActiveTab('scoring');
               setSelectedCandidateId(null);
             } else {
-              setIsAuthOpen(true);
+              handleOpenRegister();
             }
           }}
           style={{
@@ -286,7 +313,7 @@ const AppContent: React.FC = () => {
         )}
 
         <button
-          onClick={() => user ? setActiveTab('account') : setIsAuthOpen(true)}
+          onClick={() => (user ? setActiveTab('account') : handleOpenLogin())}
           style={{
             display: 'flex',
             flexDirection: 'column',

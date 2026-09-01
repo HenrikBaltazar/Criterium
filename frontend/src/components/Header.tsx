@@ -6,6 +6,7 @@ interface HeaderProps {
   activeTab: 'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring';
   setActiveTab: (tab: 'dashboard' | 'settings' | 'account' | 'scoring') => void;
   onOpenAuth: () => void;
+  onOpenRegister?: () => void;
   onToggleSidebar?: () => void;
   onOpenMobileSearch?: () => void;
 }
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   onOpenAuth,
+  onOpenRegister,
   onToggleSidebar,
   onOpenMobileSearch,
 }) => {
@@ -373,7 +375,13 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Ranking Button at EXTREME RIGHT */}
           {onToggleSidebar && (
             <button
-              onClick={onToggleSidebar}
+              onClick={() => {
+                if (!user && onOpenRegister) {
+                  onOpenRegister();
+                } else if (onToggleSidebar) {
+                  onToggleSidebar();
+                }
+              }}
               style={{
                 padding: '7px 14px',
                 borderRadius: 'var(--radius-full)',

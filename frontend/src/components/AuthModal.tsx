@@ -6,16 +6,24 @@ import { useApp } from '../context/AppContext';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: 'login' | 'register';
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const { login } = useApp();
-  const [isLogin, setIsLogin] = useState<boolean>(true);
+  const [isLogin, setIsLogin] = useState<boolean>(initialMode === 'login');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [name, setName] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(initialMode === 'login');
+      setError(null);
+    }
+  }, [isOpen, initialMode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -59,7 +67,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 200,
+        zIndex: 2000,
         background: 'rgba(0, 0, 0, 0.8)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
@@ -109,13 +117,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <X size={18} className="desktop-icon-allow" />
         </button>
 
-        <h2 style={{ fontSize: '1.45rem', marginBottom: '6px', color: 'var(--text-main)', fontWeight: 800 }}>
+        {/* Large Bold Callout Header for Register Mode */}
+        {!isLogin && (
+          <div
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-main)',
+              marginBottom: '4px',
+              textTransform: 'uppercase',
+              lineHeight: 1.1,
+            }}
+          >
+            É GRÁTIS!
+          </div>
+        )}
+
+        <h2 style={{ fontSize: '1.35rem', marginBottom: '8px', color: 'var(--text-main)', fontWeight: 800 }}>
           {isLogin ? 'Entrar no Criterium' : 'Criar Conta no Criterium'}
         </h2>
-        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.4 }}>
+        <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.45 }}>
           {isLogin
             ? 'Acesse suas regras personalizadas e sincronize suas avaliações.'
-            : 'Crie sua conta para salvar e sincronizar suas pontuações e regras.'}
+            : 'Crie sua conta gratuitamente para analisar os candidatos, pontua-los e criar seu próprio ranking baseado no que é importante para você!'}
         </p>
 
         {error && (
@@ -199,7 +224,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <input
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="Sua senha secreta"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
@@ -220,42 +245,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             type="submit"
             disabled={loading}
             style={{
+              marginTop: '6px',
               padding: '12px',
               borderRadius: 'var(--radius-full)',
               background: 'var(--text-main)',
               color: 'var(--bg-primary)',
               fontWeight: 800,
               fontSize: '0.9rem',
-              marginTop: '8px',
-              border: '1px solid var(--border-strong)',
+              border: 'none',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
               transition: 'var(--transition)',
             }}
           >
-            {loading ? 'Aguarde...' : isLogin ? 'Entrar na Conta' : 'Criar Minha Conta'}
+            {loading ? 'Aguarde...' : isLogin ? 'Entrar' : 'Cadastrar Gratuitamente'}
           </button>
         </form>
 
         <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-          {isLogin ? 'Não tem uma conta?' : 'Já possui uma conta?'}{' '}
-          <button
-            onClick={() => { setIsLogin(!isLogin); setError(null); }}
-            style={{
-              color: 'var(--text-main)',
-              fontWeight: 700,
-              textDecoration: 'underline',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              marginLeft: '4px',
-            }}
-          >
-            {isLogin ? 'Cadastre-se' : 'Faça Login'}
-          </button>
+          {isLogin ? (
+            <>
+              Ainda não tem uma conta?{' '}
+              <button
+                onClick={() => {
+                  setIsLogin(false);
+                  setError(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-main)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                Cadastre-se grátis
+              </button>
+            </>
+          ) : (
+            <>
+              Já possui uma conta?{' '}
+              <button
+                onClick={() => {
+                  setIsLogin(true);
+                  setError(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-main)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                Faça login
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
-

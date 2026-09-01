@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 
 interface DashboardPageProps {
   onSelectCandidate: (candidateId: string) => void;
+  onRequireAuth?: () => void;
 }
 
 // Strict requested cargo order
@@ -33,7 +34,7 @@ const CARGO_TSE_REGISTERED_TARGETS: Record<string, number> = {
 
 const BATCH_SIZE = 24;
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectCandidate }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectCandidate, onRequireAuth }) => {
   const { selectedYear, selectedCargo, selectedState, searchQuery, cargos, settings, collapsedCargos, toggleCargoCollapse } = useApp();
   const [cargoCandidatesMap, setCargoCandidatesMap] = useState<Record<string, Candidate[]>>({});
   const [cargoTotalsMap, setCargoTotalsMap] = useState<Record<string, number>>({});
@@ -259,6 +260,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectCandidate 
                           candidate={cand}
                           rank={rankIndex + 1}
                           onSelect={onSelectCandidate}
+                          onRequireAuth={onRequireAuth}
                         />
                       ))}
                     </div>
