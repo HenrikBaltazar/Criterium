@@ -521,24 +521,10 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
               Chat com o Plano de Governo Oficial (TSE)
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Análise 100% factual e sem alucinações das propostas registradas por {candidateName}
+              Análise direta das propostas registradas por {candidateName}
             </div>
           </div>
         </div>
-
-        <span
-          className="badge badge-neutral"
-          style={{
-            fontSize: '0.75rem',
-            padding: '4px 10px',
-            background: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-subtle)',
-            color: 'var(--text-main)',
-            fontWeight: 700,
-          }}
-        >
-          ⚡ Factual PDF AI
-        </span>
       </div>
 
       {/* Tela de Inicialização / Botão Iniciar Chat */}
@@ -619,7 +605,6 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
               }}
             >
               <span>📄 Documento do TSE: <strong>{pdfStats.totalPages} páginas</strong> ({pdfStats.totalWords.toLocaleString('pt-BR')} palavras lidas)</span>
-              <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>100% Factual</span>
             </div>
           )}
 
