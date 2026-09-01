@@ -1700,6 +1700,7 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                   pdfUrl={primaryPdfUrl}
                   summaryText={candidate.summary}
                   proposals={candidate.proposals}
+                  onRequireAuth={onRequireAuth}
                 />
               );
             })()}

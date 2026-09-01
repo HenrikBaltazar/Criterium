@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, RefreshCw, Sparkles, Cpu, FileText, CheckCircle2, Play, ExternalLink } from 'lucide-react';
+import { Send, Bot, RefreshCw, Sparkles, Cpu, FileText, CheckCircle2, Play, ExternalLink, Lock } from 'lucide-react';
 import { CreateMLCEngine, MLCEngineInterface } from '@mlc-ai/web-llm';
 import * as pdfjsLib from 'pdfjs-dist';
+import { useApp } from '../context/AppContext';
 
 // Configura o worker do PDF.js para processamento no navegador
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -18,6 +19,7 @@ interface ProposalPdfChatProps {
   pdfUrl?: string;
   summaryText?: string;
   proposals?: ProposalItem[];
+  onRequireAuth?: () => void;
 }
 
 interface Message {
@@ -56,7 +58,9 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
   pdfUrl,
   summaryText,
   proposals = [],
+  onRequireAuth,
 }) => {
+  const { user } = useApp();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -128,6 +132,13 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
 
   // Função disparada ao clicar no botão "Iniciar Chat"
   const handleStartChat = async () => {
+    if (!user) {
+      if (onRequireAuth) {
+        onRequireAuth();
+      }
+      return;
+    }
+
     setIsInitializing(true);
     setInitLogs([]);
     console.group(`[Criterium PDF Chat] Inicializando sessão para ${candidateName}`);
@@ -395,6 +406,12 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
   // Envio de pergunta do usuário para o modelo de IA / RAG
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!user) {
+      if (onRequireAuth) {
+        onRequireAuth();
+      }
+      return;
+    }
     const query = inputQuestion.trim();
     if (!query || isProcessing) return;
 
@@ -615,7 +632,9 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
           }}
         >
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '18px', maxWidth: '560px', margin: '0 auto 18px auto', lineHeight: 1.5 }}>
-            Clique no botão abaixo para baixar o PDF oficial do Plano de Governo no TSE, indexar as páginas e conversar diretamente com as propostas do candidato.
+            {user
+              ? 'Clique no botão abaixo para baixar o PDF oficial do Plano de Governo no TSE, indexar as páginas e conversar diretamente com as propostas do candidato.'
+              : 'Crie sua conta gratuitamente para baixar o PDF oficial do Plano de Governo no TSE, indexar as páginas e conversar diretamente com as propostas do candidato.'}
           </p>
 
           <button
@@ -633,8 +652,20 @@ export const ProposalPdfChat: React.FC<ProposalPdfChatProps> = ({
               opacity: isInitializing ? 0.7 : 1,
             }}
           >
-            {isInitializing ? <RefreshCw size={18} className="animate-spin" /> : <Play size={18} />}
-            <span>{isInitializing ? 'Baixando e Lendo PDF do TSE...' : 'Iniciar Chat com o Plano de Governo'}</span>
+            {isInitializing ? (
+              <RefreshCw size={18} className="animate-spin" />
+            ) : user ? (
+              <Play size={18} />
+            ) : (
+              <Lock size={18} />
+            )}
+            <span>
+              {isInitializing
+                ? 'Baixando e Lendo PDF do TSE...'
+                : user
+                ? 'Iniciar Chat com o Plano de Governo'
+                : 'Criar Conta Grátis para Iniciar Chat'}
+            </span>
           </button>
 
           {/* Logs de inicialização */}
