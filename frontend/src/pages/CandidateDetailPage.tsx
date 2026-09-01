@@ -1678,14 +1678,31 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
               </div>
             )}
 
-            {/* Componente de Chat Client-Side no Navegador para Conversar com o Plano de Governo - Exibido Apenas se WebLLM (WebGPU) ou Chrome AI Estiverem Disponíveis */}
-            {isClientAiAvailable() && (
-              <ProposalPdfChat
-                candidateName={candidate.popularName}
-                summaryText={candidate.summary}
-                proposals={candidate.proposals}
-              />
-            )}
+            {/* Componente de Chat Client-Side no Navegador para Conversar com o Plano de Governo */}
+            {(() => {
+              const primaryPdfUrl = (() => {
+                if (proposalFiles && proposalFiles.length > 0) {
+                  const arq = proposalFiles[0];
+                  const fileId = arq.idArquivo || arq.idDoc || arq.id || arq.cod || (arq.url && arq.url.match(/\d{8,}/) ? arq.url.match(/\d{8,}/)[0] : null);
+                  if (fileId) return `https://divulgacandcontas.tse.jus.br/divulga/rest/arquivo/doc/${fileId}`;
+                  if (arq.url && arq.url.startsWith('http')) return arq.url;
+                  if (arq.nome && arq.nome.startsWith('http')) return arq.nome;
+                }
+                if (candidate.sqCandidato) {
+                  return `https://divulgacandcontas.tse.jus.br/divulga/rest/arquivo/doc/${candidate.sqCandidato}`;
+                }
+                return undefined;
+              })();
+
+              return (
+                <ProposalPdfChat
+                  candidateName={candidate.popularName}
+                  pdfUrl={primaryPdfUrl}
+                  summaryText={candidate.summary}
+                  proposals={candidate.proposals}
+                />
+              );
+            })()}
           </div>
         </div>
       )}
