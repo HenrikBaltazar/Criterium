@@ -1238,19 +1238,47 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                   const isEleito = isElected(eleicao.situacaoTotalizacao);
                   const isSuplente = eleicao.situacaoTotalizacao === 'Suplente';
 
+                  // Specific TSE administrative/judicial status description (e.g. "Indeferido", "Indeferido com recurso", "Cancelado", "Cassado", "Renúncia")
+                  const descricaoSituacao = eleicao.descricaoSituacao ||
+                    (eleicao.situacaoTotalizacao !== 'Eleito' && eleicao.situacaoTotalizacao !== 'Não eleito' && eleicao.situacaoTotalizacao !== 'Suplente' && eleicao.situacaoTotalizacao !== 'Concorreu'
+                      ? eleicao.situacaoTotalizacao
+                      : null);
+
+                  const rawMotivos = eleicao.motivos || eleicao.motivoSituacao;
+                  const motivosList: string[] = Array.isArray(rawMotivos)
+                    ? rawMotivos.map((m: any) => (typeof m === 'object' && m.nmMotivoIndeferimento ? m.nmMotivoIndeferimento : String(m)))
+                    : typeof rawMotivos === 'string'
+                    ? [rawMotivos]
+                    : [];
+
+                  // Check if candidacy was eliminated/ineligible/indeferida
+                  const statusClean = String(descricaoSituacao || eleicao.situacaoTotalizacao || '').toLowerCase();
+                  const isEliminated =
+                    statusClean.includes('indeferid') ||
+                    statusClean.includes('cancelad') ||
+                    statusClean.includes('cassad') ||
+                    statusClean.includes('inapt') ||
+                    statusClean.includes('renúnci') ||
+                    statusClean.includes('renuncia') ||
+                    statusClean.includes('impugna') ||
+                    statusClean.includes('impedido') ||
+                    statusClean.includes('não conhecid');
+
                   return (
                     <div
                       key={eleicao.id || idx}
                       style={{
-                        background: 'var(--bg-tertiary)',
+                        background: isEliminated ? 'var(--bg-secondary)' : 'var(--bg-tertiary)',
                         padding: '16px',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border-subtle)',
+                        border: isEliminated ? '1px dashed var(--border-subtle)' : '1px solid var(--border-subtle)',
+                        opacity: isEliminated ? 0.72 : 1,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         flexWrap: 'wrap',
                         gap: '12px',
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1282,7 +1310,8 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                           style={{
                             fontSize: '1.2rem',
                             fontWeight: 800,
-                            color: 'var(--text-main)',
+                            color: isEliminated ? 'var(--text-muted)' : 'var(--text-main)',
+                            textDecoration: isEliminated ? 'line-through' : 'none',
                             background: 'var(--bg-primary)',
                             padding: '8px 12px',
                             borderRadius: 'var(--radius-sm)',
@@ -1292,25 +1321,62 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                           {eleicao.nrAno}
                         </div>
                         <div>
-                          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                          <div
+                            style={{
+                              fontSize: '1rem',
+                              fontWeight: 700,
+                              color: isEliminated ? 'var(--text-muted)' : 'var(--text-main)',
+                              textDecoration: isEliminated ? 'line-through' : 'none',
+                            }}
+                          >
                             {eleicao.cargo} • {eleicao.local || eleicao.sgUe}
                           </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          <div
+                            style={{
+                              fontSize: '0.8rem',
+                              color: 'var(--text-muted)',
+                              marginTop: '2px',
+                              textDecoration: isEliminated ? 'line-through' : 'none',
+                            }}
+                          >
                             Partido: <strong>{eleicao.partido}</strong> (Nº {eleicao.nrCandidato}) • Nome de urna: <em>{eleicao.nomeUrna}</em>
                           </div>
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {/* Primary Result Status Badge */}
                         <span
                           className={`badge ${isEleito ? 'badge-experiente' : isSuplente ? 'badge-outline' : 'badge-neutral'}`}
-                          style={{ fontSize: '0.8rem', padding: '4px 10px' }}
+                          style={{
+                            fontSize: '0.8rem',
+                            padding: '4px 10px',
+                            opacity: isEliminated ? 0.85 : 1,
+                          }}
                         >
                           {isEleito && <CheckCircle size={13} style={{ marginRight: '4px' }} />}
-                          {eleicao.situacaoTotalizacao || 'Participou'}
+                          {descricaoSituacao || eleicao.situacaoTotalizacao || 'Participou'}
                         </span>
 
-                        {/* Botão de Atalho "Verificar desempenho" na extrema direita - APENAS QUANDO HOUVER DADOS DE DESEMPENHO PARA O MANDATO */}
+                        {/* Motivos / Situações detalhadas (Ficha limpa, Impugnação, etc.) */}
+                        {motivosList.map((mText: string, mIdx: number) => (
+                          <span
+                            key={mIdx}
+                            className="badge badge-neutral"
+                            style={{
+                              fontSize: '0.78rem',
+                              padding: '4px 10px',
+                              background: 'var(--bg-primary)',
+                              border: '1px solid var(--border-strong)',
+                              color: 'var(--text-main)',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {mText}
+                          </span>
+                        ))}
+
+                        {/* Botão de Atalho "Verificar desempenho" na extrema direita */}
                         {(() => {
                           const yr = Number(eleicao.nrAno);
                           const cargoClean = String(eleicao.cargo || '').toUpperCase();
