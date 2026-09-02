@@ -97,7 +97,13 @@ export function calculateCandidateScore(
           let label = `Regra Automática`;
 
           if (r.component === 'PARTY' && candidateData?.party) {
-            if (candidateData.party.trim().toLowerCase() === (r.categoryValue || '').trim().toLowerCase()) {
+            const candParty = candidateData.party.trim().toUpperCase();
+            const partyList = (r.categoryValue || '')
+              .split(',')
+              .map((p: string) => p.trim().toUpperCase())
+              .filter(Boolean);
+
+            if (partyList.includes(candParty)) {
               matches = true;
               label = `Regra Partido (${r.categoryValue})`;
             }

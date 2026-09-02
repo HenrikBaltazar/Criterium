@@ -266,7 +266,11 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
       autoRuleItems.forEach((r) => {
         if (r.component === itemType) {
           if (itemId) {
-            if (String(r.categoryValue || r.itemId) === String(itemId)) {
+            const ruleParties = String(r.categoryValue || r.itemId)
+              .split(',')
+              .map((p) => p.trim().toUpperCase());
+            const targetItem = String(itemId).trim().toUpperCase();
+            if (ruleParties.includes(targetItem) || String(r.categoryValue || r.itemId) === String(itemId)) {
               score += r.points;
             }
           } else {

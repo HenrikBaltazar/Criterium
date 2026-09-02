@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Award, Save, RotateCcw, ArrowLeft, Plus, Minus, X, Settings, Trash2, AlertOctagon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Award, Save, RotateCcw, ArrowLeft, Plus, Minus, X, Settings, Trash2, AlertOctagon, ChevronDown } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AutoScoreRule } from '../types';
 import { deleteAllUserEvaluations } from '../services/api';
@@ -183,6 +183,142 @@ const NumberStepControl: React.FC<NumberStepControlProps> = ({
   );
 };
 
+interface MultiPartySelectProps {
+  selectedParties: string[];
+  onChange: (parties: string[]) => void;
+  options: string[];
+}
+
+const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleParty = (party: string) => {
+    if (selectedParties.includes(party)) {
+      onChange(selectedParties.filter((p) => p !== party));
+    } else {
+      onChange([...selectedParties, party]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedParties.length === options.length) {
+      onChange([]);
+    } else {
+      onChange([...options]);
+    }
+  };
+
+  const buttonLabel = (() => {
+    if (selectedParties.length === 0) return 'Selecione os partidos...';
+    if (selectedParties.length === 1) return `1 partido (${selectedParties[0]})`;
+    if (selectedParties.length <= 3) return `${selectedParties.length} partidos (${selectedParties.join(', ')})`;
+    return `${selectedParties.length} partidos selecionados`;
+  })();
+
+  return (
+    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block', minWidth: '240px' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-sm)',
+          background: 'var(--bg-tertiary)',
+          border: '1px solid var(--border-subtle)',
+          color: 'var(--text-main)',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          cursor: 'pointer',
+          fontSize: '0.88rem',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{buttonLabel}</span>
+        <ChevronDown size={16} color="var(--text-muted)" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            zIndex: 100,
+            width: '280px',
+            maxHeight: '280px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: '0 12px 28px rgba(0, 0, 0, 0.5)',
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '6px' }}>
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {selectedParties.length === options.length ? 'Desmarcar Todos' : 'Marcar Todos'}
+            </button>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{selectedParties.length} selecionado(s)</span>
+          </div>
+
+          <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '4px' }}>
+            {options.map((p) => {
+              const isChecked = selectedParties.includes(p);
+              return (
+                <label
+                  key={p}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: isChecked ? 'var(--bg-tertiary)' : 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '0.84rem',
+                    fontWeight: isChecked ? 700 : 500,
+                    color: 'var(--text-main)',
+                    userSelect: 'none',
+                    transition: 'var(--transition)',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleParty(p)}
+                    style={{ accentColor: 'var(--text-main)', cursor: 'pointer' }}
+                  />
+                  <span>{p}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToDashboard }) => {
   const { settings, updateSettings, user } = useApp();
   const [rules, setRules] = useState<AutoScoreRule[]>([]);
@@ -190,7 +326,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [resetSuccess, setResetSuccess] = useState<boolean>(false);
 
   // Form states with numeric step control & cargo filter
-  const [partySelect, setPartySelect] = useState('');
+  const [selectedParties, setSelectedParties] = useState<string[]>([]);
   const [partyCargo, setPartyCargo] = useState('TODOS');
   const [partyPoints, setPartyPoints] = useState<number>(0);
 
@@ -402,28 +538,23 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 <option key={c} value={c}>Cargo: {c}</option>
               ))}
             </select>
-            <select
-              value={partySelect}
-              onChange={(e) => setPartySelect(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
-            >
-              <option value="">Selecione o partido</option>
-              {PARTY_OPTIONS.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            <MultiPartySelect
+              selectedParties={selectedParties}
+              onChange={setSelectedParties}
+              options={PARTY_OPTIONS}
+            />
             <NumberStepControl value={partyPoints} onChange={setPartyPoints} />
             <button
-              disabled={!partySelect}
+              disabled={selectedParties.length === 0}
               onClick={() => {
-                if (!partySelect) return;
-                handleAddRule({ component: 'PARTY', categoryValue: partySelect, cargo: partyCargo, points: partyPoints });
-                setPartySelect('');
+                if (selectedParties.length === 0) return;
+                handleAddRule({ component: 'PARTY', categoryValue: selectedParties.join(', '), cargo: partyCargo, points: partyPoints });
+                setSelectedParties([]);
                 setPartyCargo('TODOS');
                 setPartyPoints(0);
               }}
               className="btn btn-outline"
-              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', opacity: !partySelect ? 0.5 : 1 }}
+              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', opacity: selectedParties.length === 0 ? 0.5 : 1 }}
             >
               <Plus size={14} className="desktop-icon-allow" /> Adicionar Regra
             </button>
@@ -431,7 +562,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {getRulesByComponent('PARTY').map((r) => (
               <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] Partido {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
+                <span>[{r.cargo || 'TODOS'}] Partido(s) {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
                 <button
                   type="button"
                   onClick={() => handleDeleteRule(r.id)}
