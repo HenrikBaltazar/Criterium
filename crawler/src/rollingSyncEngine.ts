@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { fetchTseJson } from './tseFetcher';
+import { fetchWikipediaSummaryForCandidate } from './enrich_wikipedia';
 
 const prisma = new PrismaClient();
 
@@ -53,6 +54,19 @@ export async function startRollingSyncEngine(targetDays = 7) {
             const updatedOccupation = detail.ocupacao || cand.occupation;
             const updatedStatus = detail.descricaoSituacao || cand.status;
 
+            let wikiUpdateData: any = {};
+            if (!cand.wikipediaSummary) {
+              const wikiData = await fetchWikipediaSummaryForCandidate(cand.name, cand.popularName, cand.party, cand.state);
+              if (wikiData) {
+                wikiUpdateData = {
+                  wikipediaSummary: wikiData.summary,
+                  wikipediaUrl: wikiData.url,
+                  wikipediaChecked: true,
+                };
+                console.log(`   📖 [Wikipédia Encontrado] Resumo: "${wikiData.summary.substring(0, 50)}..."`);
+              }
+            }
+
             await prisma.candidate.update({
               where: { id: cand.id },
               data: {
@@ -60,6 +74,7 @@ export async function startRollingSyncEngine(targetDays = 7) {
                 education: updatedEducation,
                 occupation: updatedOccupation,
                 status: updatedStatus,
+                ...wikiUpdateData,
                 updatedAt: new Date()
               }
             });

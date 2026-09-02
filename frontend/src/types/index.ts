@@ -93,7 +93,7 @@ export interface PublicPerformance {
 export interface UserEvaluation {
   id?: string;
   candidateId: string;
-  itemType: 'PROPOSAL' | 'CAREER' | 'CONTROVERSY' | 'GENERAL' | 'AUTO_OVERRIDE' | 'PARTY' | 'OCCUPATION' | 'EDUCATION' | 'ASSETS' | 'VICE' | 'EXPERIENCE' | 'PERFORMANCE' | 'ANNOTATION';
+  itemType: 'PROPOSAL' | 'CAREER' | 'CONTROVERSY' | 'GENERAL' | 'AUTO_OVERRIDE' | 'PARTY' | 'OCCUPATION' | 'EDUCATION' | 'ASSETS' | 'VICE' | 'EXPERIENCE' | 'PERFORMANCE' | 'ANNOTATION' | 'PARTY_SWITCH';
   itemId?: string;
   rating: number; // Scale from -5 to +5
   comment?: string;
@@ -138,6 +138,8 @@ export interface Candidate {
   priorElectionsJson?: string;
   proposalsJson?: string;
   academicHistoryJson?: string;
+  wikipediaSummary?: string;
+  wikipediaUrl?: string;
   infoSourceUrl?: string;
   birthDate?: string;
   gender?: string;
@@ -166,7 +168,7 @@ export interface Candidate {
 
 export interface AutoScoreRule {
   id: string;
-  component: 'PARTY' | 'EDUCATION' | 'ASSETS' | 'OCCUPATION' | 'EXPERIENCE' | 'PERFORMANCE';
+  component: 'PARTY' | 'EDUCATION' | 'ASSETS' | 'OCCUPATION' | 'EXPERIENCE' | 'PERFORMANCE' | 'PARTY_SWITCHES';
   categoryValue?: string;
   minValue?: number;
   maxValue?: number;
@@ -178,6 +180,7 @@ export interface UserSettings {
   id?: string;
   presetName: string;
   autoRulesJson?: string;
+  selectedState?: string;
   isGuest?: boolean;
 }
 

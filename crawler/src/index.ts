@@ -3,6 +3,7 @@ import { fetchTseJson } from './tseFetcher';
 import { ingestHistoricalAssets } from './ingestHistoricalAssets';
 import { syncPublicPerformance } from './ingest_public_performance';
 import { syncSenateEducation } from './ingest_senate_education';
+import { syncWikipediaSummaries } from './enrich_wikipedia';
 import { startRollingSyncEngine } from './rollingSyncEngine';
 
 const prisma = new PrismaClient();
@@ -339,6 +340,10 @@ async function main() {
   console.log('\n🎓 [Fase 5] Sincronizando histórico acadêmico e educação superior oficial (Senado Federal)...');
   await syncSenateEducation();
 
+  // 7. Fase 6: Enriquecimento de Resumos do Wikipédia
+  console.log('\n📖 [Fase 6] Buscando resumos e links oficiais do Wikipédia para os candidatos...');
+  await syncWikipediaSummaries();
+
   clearInterval(heartbeatTimer);
   await updateHeartbeat('ativo', totalFetchedCounter);
 
@@ -349,8 +354,8 @@ async function main() {
   console.log(`🔄 Candidatos existentes enriquecidos sem sobrescrever: ${totalCandidatesUpdated}`);
   console.log('========================================================\n');
 
-  // 7. Fase 6: Iniciar Motor de Re-verificação Contínua Lenta (Ciclo de 7 dias ininterruptos)
-  console.log('🔄 [Fase 6 - Re-verificação Contínua] Ativando motor de sincronização ritmada (Ciclo de 7 dias)...');
+  // 8. Fase 7: Iniciar Motor de Re-verificação Contínua Lenta (Ciclo de 7 dias ininterruptos)
+  console.log('🔄 [Fase 7 - Re-verificação Contínua] Ativando motor de sincronização ritmada (Ciclo de 7 dias)...');
   await startRollingSyncEngine(7);
 }
 

@@ -172,7 +172,7 @@ export async function saveUserSettings(settings: UserSettings): Promise<UserSett
 
 export async function submitEvaluation(evaluation: {
   candidateId: string;
-  itemType: 'PROPOSAL' | 'CAREER' | 'CONTROVERSY' | 'GENERAL' | 'AUTO_OVERRIDE' | 'PARTY' | 'OCCUPATION' | 'EDUCATION' | 'ASSETS' | 'VICE' | 'EXPERIENCE' | 'PERFORMANCE' | 'ANNOTATION';
+  itemType: UserEvaluation['itemType'];
   itemId?: string;
   rating: number;
   comment?: string;

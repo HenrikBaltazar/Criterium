@@ -57,6 +57,43 @@ export function calculateCandidateExperience(
   return { tag: 'INTERMEDIATE', totalYears: pastElections.length * 2 };
 }
 
+export function calculatePartySwitchesCount(
+  priorElectionsJson?: string | null,
+  currentParty?: string | null
+): number {
+  if (!priorElectionsJson) return 0;
+  try {
+    const prior = typeof priorElectionsJson === 'string' ? JSON.parse(priorElectionsJson) : priorElectionsJson;
+    if (!Array.isArray(prior) || prior.length === 0) return 0;
+
+    const sorted = [...prior]
+      .filter((e: any) => e.nrAno && Number(e.nrAno) < 2026)
+      .sort((a: any, b: any) => Number(a.nrAno || 0) - Number(b.nrAno || 0));
+
+    let switches = 0;
+    let lastParty = '';
+
+    for (const el of sorted) {
+      const party = String(el.partido || el.sgPartido || '').trim().toUpperCase();
+      if (party) {
+        if (lastParty !== '' && party !== lastParty) {
+          switches++;
+        }
+        lastParty = party;
+      }
+    }
+
+    const curParty = String(currentParty || '').trim().toUpperCase();
+    if (lastParty !== '' && curParty !== '' && curParty !== lastParty) {
+      switches++;
+    }
+
+    return switches;
+  } catch (e) {
+    return 0;
+  }
+}
+
 export function calculateCandidateScore(
   userSettings?: UserSettings | null,
   userEvaluations: UserEvaluation[] = [],
@@ -152,6 +189,13 @@ export function calculateCandidateScore(
               label = isMaxRule
                 ? `Regra Assiduidade Máxima (≤${r.maxValue}% - candidato tem ${rate}%)`
                 : `Regra Assiduidade Mínima (≥${r.minValue || 0}% - candidato tem ${rate}%)`;
+            }
+          } else if (r.component === 'PARTY_SWITCHES' || r.component === 'PARTY_SWITCH') {
+            const switchesCount = calculatePartySwitchesCount(candidateData?.priorElectionsJson, candidateData?.party);
+            const minVal = r.minValue == null || r.minValue === 0 ? 1 : r.minValue;
+            if (switchesCount >= minVal && switchesCount > 0) {
+              matches = true;
+              label = `Regra Troca de Partido (≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'} - candidato tem ${switchesCount})`;
             }
           }
 

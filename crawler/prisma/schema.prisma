@@ -44,6 +44,8 @@ enum EvaluationItemType {
   VICE
   EXPERIENCE
   PERFORMANCE
+  ANNOTATION
+  PARTY_SWITCH
 }
 
 model User {
@@ -109,6 +111,9 @@ model Candidate {
   priorElectionsJson    String?  // JSON stringified array of prior elections from TSE
   proposalsJson         String?  // JSON stringified array of proposal/government plan files from TSE
   academicHistoryJson   String?  // JSON stringified array of academic history degrees from Senate/Government APIs
+  wikipediaSummary      String?  // First paragraph intro summary from Wikipedia
+  wikipediaUrl          String?  // Wikipedia official page URL
+  wikipediaChecked      Boolean  @default(false) // Flag indicating if Wikipedia search was performed
   infoSourceUrl         String?  // TSE official declaration source URL
   birthDate             String?
   gender                String?
@@ -131,6 +136,7 @@ model Candidate {
   controversies         Controversy[]
   evaluations           UserEvaluation[]
   publicPerformance     PublicPerformance?
+  annotations           CandidateAnnotation[]
 
   @@index([sqCandidato])
   @@index([cpf])
@@ -209,6 +215,7 @@ model UserSettings {
 
   presetName    String   @default("CUSTOM")
   autoRulesJson String?  @default("[]")
+  selectedState String?  @default("ALL")
 
   updatedAt     DateTime @updatedAt
 
@@ -230,6 +237,23 @@ model UserEvaluation {
 
   @@unique([userId, candidateId, itemType, itemId])
   @@map("user_evaluations")
+}
+
+model CandidateAnnotation {
+  id          String    @id @default(uuid())
+  userId      String?
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String
+  eventDate   String?
+  sourceUrl   String?
+  rating      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("candidate_annotations")
 }
 
 model CrawlerStatus {

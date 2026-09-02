@@ -8,6 +8,7 @@ const router = Router();
 const UpdateSettingsSchema = z.object({
   presetName: z.string().optional(),
   autoRulesJson: z.string().optional(),
+  selectedState: z.string().optional(),
 });
 
 router.get('/', optionalAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
@@ -16,6 +17,7 @@ router.get('/', optionalAuthMiddleware, async (req: AuthenticatedRequest, res: R
       return res.json({
         presetName: 'CUSTOM',
         autoRulesJson: '[]',
+        selectedState: 'ALL',
         isGuest: true,
       });
     }
@@ -30,11 +32,17 @@ router.get('/', optionalAuthMiddleware, async (req: AuthenticatedRequest, res: R
           userId: req.user.id,
           presetName: 'CUSTOM',
           autoRulesJson: '[]',
+          selectedState: 'ALL',
         },
       });
     }
 
-    return res.json({ ...settings, autoRulesJson: settings.autoRulesJson || '[]', isGuest: false });
+    return res.json({
+      ...settings,
+      autoRulesJson: settings.autoRulesJson || '[]',
+      selectedState: settings.selectedState || 'ALL',
+      isGuest: false,
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Erro ao buscar configurações.' });
   }
@@ -46,16 +54,19 @@ router.put('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
 
     const data = UpdateSettingsSchema.parse(req.body);
 
+    const updatePayload: any = {};
+    if (data.presetName !== undefined) updatePayload.presetName = data.presetName;
+    if (data.autoRulesJson !== undefined) updatePayload.autoRulesJson = data.autoRulesJson;
+    if (data.selectedState !== undefined) updatePayload.selectedState = data.selectedState;
+
     const settings = await prisma.userSettings.upsert({
       where: { userId: req.user.id },
-      update: {
-        presetName: data.presetName || 'CUSTOM',
-        autoRulesJson: data.autoRulesJson ?? '[]',
-      },
+      update: updatePayload,
       create: {
         userId: req.user.id,
         presetName: data.presetName || 'CUSTOM',
         autoRulesJson: data.autoRulesJson ?? '[]',
+        selectedState: data.selectedState ?? 'ALL',
       },
     });
 

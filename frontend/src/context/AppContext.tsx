@@ -42,6 +42,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setSelectedState = (state: string) => {
     setSelectedStateState(state);
     localStorage.setItem('criterium_selected_state', state);
+    const updatedSettings = { ...settings, selectedState: state };
+    setSettings(updatedSettings);
+    if (token) {
+      saveUserSettings(updatedSettings).catch(console.error);
+    }
   };
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -69,6 +74,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<UserSettings>({
     presetName: 'CUSTOM',
     autoRulesJson: '[]',
+    selectedState: 'ALL',
     isGuest: true,
   });
 
@@ -124,6 +130,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const settingsData = await fetchUserSettings();
         setSettings(settingsData);
+        if (settingsData.selectedState) {
+          setSelectedStateState(settingsData.selectedState);
+          localStorage.setItem('criterium_selected_state', settingsData.selectedState);
+        }
       } catch (err) {
         console.error('Error initializing app context:', err);
       } finally {
@@ -136,14 +146,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateSettings = async (newSettings: UserSettings) => {
     const saved = await saveUserSettings(newSettings);
     setSettings(saved);
+    if (saved.selectedState) {
+      setSelectedStateState(saved.selectedState);
+      localStorage.setItem('criterium_selected_state', saved.selectedState);
+    }
   };
 
-  const login = (newToken: string, newUser: User) => {
+  const login = async (newToken: string, newUser: User) => {
     localStorage.removeItem('criterium_guest_evaluations');
     localStorage.removeItem('criterium_guest_settings');
     localStorage.setItem('criterium_token', newToken);
     setToken(newToken);
     setUser(newUser);
+    try {
+      const userSettings = await fetchUserSettings();
+      setSettings(userSettings);
+      if (userSettings.selectedState) {
+        setSelectedStateState(userSettings.selectedState);
+        localStorage.setItem('criterium_selected_state', userSettings.selectedState);
+      }
+    } catch (e) {}
     window.dispatchEvent(new Event('criterium_rules_updated'));
   };
 
@@ -154,6 +176,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('criterium_guest_settings');
     setToken(null);
     setUser(null);
+    setSelectedStateState('ALL');
+    localStorage.setItem('criterium_selected_state', 'ALL');
     window.dispatchEvent(new Event('criterium_rules_updated'));
   };
 

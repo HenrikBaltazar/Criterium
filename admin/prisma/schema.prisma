@@ -45,6 +45,7 @@ enum EvaluationItemType {
   EXPERIENCE
   PERFORMANCE
   ANNOTATION
+  PARTY_SWITCH
 }
 
 model User {
@@ -104,13 +105,16 @@ model Candidate {
   status                String   @default("DEFERIDO")
   summary               String
   biography             String?
-  socialLinks           String?
-  assetsJson            String?
-  vicesJson             String?
-  priorElectionsJson    String?
-  proposalsJson         String?
-  academicHistoryJson   String?
-  infoSourceUrl         String?
+  socialLinks           String?  // JSON stringified object { website, instagram, twitter, youtube, facebook }
+  assetsJson            String?  // JSON stringified array of TSE declared assets
+  vicesJson             String?  // JSON stringified array of TSE vice candidates
+  priorElectionsJson    String?  // JSON stringified array of prior elections from TSE
+  proposalsJson         String?  // JSON stringified array of proposal/government plan files from TSE
+  academicHistoryJson   String?  // JSON stringified array of academic history degrees from Senate/Government APIs
+  wikipediaSummary      String?  // First paragraph intro summary from Wikipedia
+  wikipediaUrl          String?  // Wikipedia official page URL
+  wikipediaChecked      Boolean  @default(false) // Flag indicating if Wikipedia search was performed
+  infoSourceUrl         String?  // TSE official declaration source URL
   birthDate             String?
   gender                String?
   genderIdentity        String?
@@ -154,9 +158,9 @@ model PublicPerformance {
   excusedAbsences     Int       @default(0)
   unexcusedAbsences   Int       @default(0)
   attendanceRate      Float     @default(0.0)
-  expensesJson        String?
-  legislativeWorkJson String?
-  amendmentsJson      String?
+  expensesJson        String?   // JSON stringified object of CEAP/CEAPS expenses
+  legislativeWorkJson String?   // JSON stringified object of PLs, PECs & Relatorias
+  amendmentsJson      String?   // JSON stringified object of Portal da Transparência OGU amendments
   sourceUrl           String?
   updatedAt           DateTime  @updatedAt
 
@@ -211,6 +215,7 @@ model UserSettings {
 
   presetName    String   @default("CUSTOM")
   autoRulesJson String?  @default("[]")
+  selectedState String?  @default("ALL")
 
   updatedAt     DateTime @updatedAt
 
@@ -253,7 +258,7 @@ model CandidateAnnotation {
 
 model CrawlerStatus {
   id                String   @id @default("default")
-  status            String
+  status            String   // 'desativado' | 'ativo' | 'buscando'
   lastHeartbeat     DateTime @default(now())
   candidatesFetched Int      @default(0)
   updatedAt         DateTime @updatedAt

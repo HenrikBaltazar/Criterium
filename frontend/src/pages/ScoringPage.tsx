@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Award, Save, RotateCcw, ArrowLeft, Plus, Minus, X, Settings, Trash2, AlertOctagon, ChevronDown } from 'lucide-react';
+import { Award, Save, RotateCcw, ArrowLeft, Plus, Minus, X, Settings, Trash2, AlertOctagon, ChevronDown, GitCommit } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AutoScoreRule } from '../types';
 import { deleteAllUserEvaluations } from '../services/api';
@@ -404,6 +404,10 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [perfCargo, setPerfCargo] = useState('TODOS');
   const [perfPoints, setPerfPoints] = useState<number>(0);
 
+  const [partySwitchMin, setPartySwitchMin] = useState('1');
+  const [partySwitchCargo, setPartySwitchCargo] = useState('TODOS');
+  const [partySwitchPoints, setPartySwitchPoints] = useState<number>(0);
+
   const [isApplying, setIsApplying] = useState<boolean>(false);
   const [isResetRulesModalOpen, setIsResetRulesModalOpen] = useState(false);
   const [isResetEvaluationsModalOpen, setIsResetEvaluationsModalOpen] = useState(false);
@@ -604,7 +608,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           }}
         >
           <div className="glass-card" style={{ maxWidth: '440px', width: '100%', padding: '24px', textAlign: 'center' }}>
-            <AlertOctagon size={42} color="var(--accent-red, #ef4444)" style={{ marginBottom: '12px' }} />
+            <AlertOctagon size={42} color="var(--text-main)" style={{ marginBottom: '12px' }} />
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-main)' }}>Confirmar Reset de Regras?</h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.5 }}>
               Tem certeza que deseja remover todas as suas regras de pontuação automática e restaurar as configurações padrão? Esta ação não pode ser desfeita.
@@ -622,7 +626,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 type="button"
                 onClick={handleResetConfirm}
                 className="btn"
-                style={{ padding: '10px 18px', fontWeight: 700, background: 'var(--accent-red, #ef4444)', color: '#fff' }}
+                style={{ padding: '10px 18px', fontWeight: 700, background: 'var(--text-main)', color: 'var(--bg-primary)' }}
               >
                 Sim, Resetar Regras
               </button>
@@ -998,7 +1002,89 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           </div>
         </div>
 
-        {/* 6. Área de Risco: Resetar Todas as Pontuações */}
+        {/* 6. Troca de Partido */}
+        <div className="glass-card" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '1.05rem', marginBottom: '4px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <GitCommit size={18} /> Troca de Partido
+          </h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '16px' }}>
+            Pontue candidatos de acordo com a quantidade de mudanças de partido registradas em sua trajetória política.
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Mínimo de Trocas:</span>
+              <select
+                value={partySwitchMin}
+                onChange={(e) => setPartySwitchMin(e.target.value)}
+                style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer' }}
+              >
+                <option value="1">≥ 1 troca de partido</option>
+                <option value="2">≥ 2 trocas de partido</option>
+                <option value="3">≥ 3 trocas de partido</option>
+                <option value="4">≥ 4 trocas de partido</option>
+                <option value="5">≥ 5 trocas de partido</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Cargo:</span>
+              <select
+                value={partySwitchCargo}
+                onChange={(e) => setPartySwitchCargo(e.target.value)}
+                style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {CARGO_OPTIONS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            <NumberStepControl value={partySwitchPoints} onChange={setPartySwitchPoints} />
+
+            <button
+              onClick={() => {
+                const minVal = parseInt(partySwitchMin, 10) || 1;
+                handleAddRule({
+                  component: 'PARTY_SWITCHES',
+                  minValue: minVal,
+                  cargo: partySwitchCargo,
+                  points: partySwitchPoints,
+                });
+                setPartySwitchMin('1');
+                setPartySwitchCargo('TODOS');
+                setPartySwitchPoints(0);
+              }}
+              className="btn btn-outline"
+              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={14} className="desktop-icon-allow" /> Adicionar Regra
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {getRulesByComponent('PARTY_SWITCHES').map((r) => {
+              const minVal = r.minValue || 1;
+              const labelText = `Troca de Partido ≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'}`;
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }} title={labelText}>
+                  <span>[{r.cargo || 'TODOS'}] {labelText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 7. Área de Risco: Resetar Todas as Pontuações */}
         <div
           className="glass-card"
           style={{

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { submitEvaluation } from '../services/api';
 import { useApp } from '../context/AppContext';
+import { UserEvaluation } from '../types';
 
 interface RatingControlProps {
   candidateId: string;
-  itemType: 'PROPOSAL' | 'CAREER' | 'CONTROVERSY' | 'GENERAL' | 'AUTO_OVERRIDE' | 'PARTY' | 'OCCUPATION' | 'EDUCATION' | 'ASSETS' | 'VICE' | 'EXPERIENCE' | 'PERFORMANCE' | 'ANNOTATION';
+  itemType: UserEvaluation['itemType'];
   itemId?: string;
   currentRating?: number;
   onRatingChanged?: () => void;

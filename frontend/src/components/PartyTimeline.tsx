@@ -1,17 +1,27 @@
 import React from 'react';
 import { ExternalLink, GitCommit, ArrowRight, ShieldAlert } from 'lucide-react';
 import { buildTseCandidateUrl } from '../utils/badgeHelper';
+import { RatingControl } from './RatingControl';
+import { TagTooltip } from './TagTooltip';
 
 interface PartyTimelineProps {
   priorElections: any[];
   currentParty: string;
   candidateState: string;
+  candidateId?: string;
+  currentRating?: number;
+  onRatingChanged?: () => void;
+  onRequireAuth?: () => void;
 }
 
 export const PartyTimeline: React.FC<PartyTimelineProps> = ({
   priorElections = [],
   currentParty = '',
   candidateState = 'BR',
+  candidateId,
+  currentRating = 0,
+  onRatingChanged,
+  onRequireAuth,
 }) => {
   if (!priorElections || priorElections.length === 0) return null;
 
@@ -194,6 +204,44 @@ export const PartyTimeline: React.FC<PartyTimelineProps> = ({
           })}
         </div>
       </div>
+
+      {/* Rating Control for Party Switching (rendered ONLY if candidate has switched parties at least once) */}
+      {totalSwitches > 0 && candidateId && (
+        <div
+          style={{
+            marginTop: '20px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            background: 'var(--bg-tertiary)',
+            padding: '14px 18px',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldAlert size={16} /> Pontuar Mudança de Partido ({totalSwitches} {totalSwitches === 1 ? 'troca registrada' : 'trocas registradas'})
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Atribua sua nota personalizada para o histórico de trocas partidárias deste candidato.
+            </div>
+          </div>
+          <TagTooltip content="Pontuação de troca de partido">
+            <RatingControl
+              candidateId={candidateId}
+              itemType="PARTY_SWITCH"
+              itemId={`PARTY_SWITCH_${totalSwitches}`}
+              currentRating={currentRating}
+              onRatingChanged={onRatingChanged || (() => {})}
+              onRequireAuth={onRequireAuth}
+            />
+          </TagTooltip>
+        </div>
+      )}
     </div>
   );
 };

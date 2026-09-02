@@ -48,6 +48,7 @@ import { AssetEvolutionChart } from '../components/AssetEvolutionChart';
 import { PartyTimeline } from '../components/PartyTimeline';
 import PublicExpensesCard from '../components/PublicExpensesCard';
 import LegislativeWorkCard from '../components/LegislativeWorkCard';
+import { QuickCandidateNoteBox } from '../components/QuickCandidateNoteBox';
 import ParliamentaryAmendmentsCard from '../components/ParliamentaryAmendmentsCard';
 
 interface CandidateDetailPageProps {
@@ -528,6 +529,47 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                 </span>
               )}
             </div>
+
+            {/* Wikipedia Summary Intro Paragraph OR Quick Notes Fallback */}
+            {candidate.wikipediaSummary ? (
+              <div
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  padding: '14px 18px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '16px',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.55',
+                  color: 'var(--text-main)',
+                }}
+              >
+                <p style={{ margin: 0 }}>
+                  {candidate.wikipediaSummary}{' '}
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    — Fonte:{' '}
+                    <a
+                      href={candidate.wikipediaUrl || 'https://pt.wikipedia.org'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: 'var(--accent-primary)',
+                        textDecoration: 'underline',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Wikipédia
+                    </a>
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <QuickCandidateNoteBox
+                candidateId={candidate.id}
+                annotations={annotations}
+                onSave={() => loadDetail(true)}
+              />
+            )}
 
             {/* Social Links */}
             <SocialLinksBar socialLinksJson={candidate.socialLinks} />
@@ -1132,6 +1174,10 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
             priorElections={priorElections}
             currentParty={candidate.party}
             candidateState={candidate.state}
+            candidateId={candidate.id}
+            currentRating={getRating('PARTY_SWITCH')}
+            onRatingChanged={() => loadDetail(true)}
+            onRequireAuth={onRequireAuth}
           />
         </div>
       )}
