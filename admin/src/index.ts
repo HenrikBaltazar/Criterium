@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
 import authRouter from './routes/auth.js';
 import statsRouter from './routes/stats.js';
@@ -18,7 +19,9 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static frontend files for standalone Admin Web UI
-const publicDir = path.join(__dirname, 'public');
+const publicDir = fs.existsSync(path.join(__dirname, 'public'))
+  ? path.join(__dirname, 'public')
+  : path.join(process.cwd(), 'src/public');
 app.use(express.static(publicDir));
 
 // API Routes

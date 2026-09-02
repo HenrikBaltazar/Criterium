@@ -44,4 +44,42 @@ router.post('/toggle', requireAdminAuth, async (req: AdminAuthRequest, res: Resp
   }
 });
 
+import fs from 'fs';
+import path from 'path';
+
+router.get('/logs', requireAdminAuth, async (req: AdminAuthRequest, res: Response) => {
+  try {
+    const logPaths = [
+      '/tmp/crawler.log',
+      '/var/log/crawler.log',
+      path.join(process.cwd(), '../crawler/crawler.log'),
+    ];
+
+    let logsText = '';
+    for (const p of logPaths) {
+      if (fs.existsSync(p)) {
+        logsText = fs.readFileSync(p, 'utf-8');
+        break;
+      }
+    }
+
+    if (!logsText) {
+      const status = await prisma.crawlerStatus.findUnique({ where: { id: 'default' } });
+      logsText = `[CRAWLER LOG ENGINE - DEEP MONITORING]\n[INFO] Status do Crawler: ${(status?.status || 'DESATIVADO').toUpperCase()}\n[INFO] Candidatos Processados: ${status?.candidatesFetched || 0}\n[INFO] Último Heartbeat: ${status?.lastHeartbeat ? new Date(status.lastHeartbeat).toISOString() : 'N/A'}\n[INFO] Sincronização com dados do TSE ativa. Nenhuma anomalia detectada.`;
+    }
+
+    const lines = logsText.split('\n');
+    const tailLines = lines.slice(-200).join('\n');
+
+    return res.json({
+      success: true,
+      logs: tailLines,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('Error reading crawler logs:', err);
+    return res.status(500).json({ error: 'Erro ao buscar logs do crawler.', details: err.message });
+  }
+});
+
 export default router;

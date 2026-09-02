@@ -125,4 +125,99 @@ router.post('/query', requireAdminAuth, async (req: AdminAuthRequest, res: Respo
   }
 });
 
+// PUT /admin/api/database/table/:name/:id - Edit specific row in table
+router.put('/table/:name/:id', requireAdminAuth, async (req: AdminAuthRequest, res: Response) => {
+  try {
+    const { name, id } = req.params;
+    const data = req.body;
+
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({ error: 'Dados para atualização não fornecidos.' });
+    }
+
+    const { id: _, createdAt: __, updatedAt: ___, ...updateData } = data;
+
+    let updated: any;
+    switch (name.toLowerCase()) {
+      case 'users':
+        updated = await prisma.user.update({ where: { id }, data: updateData });
+        break;
+      case 'candidates':
+        updated = await prisma.candidate.update({ where: { id }, data: updateData });
+        break;
+      case 'user_evaluations':
+        updated = await prisma.userEvaluation.update({ where: { id }, data: updateData });
+        break;
+      case 'user_settings':
+        updated = await prisma.userSettings.update({ where: { id }, data: updateData });
+        break;
+      case 'cargos':
+        updated = await prisma.cargo.update({ where: { id }, data: updateData });
+        break;
+      case 'election_years':
+        updated = await prisma.electionYear.update({ where: { id }, data: updateData });
+        break;
+      case 'proposals':
+        updated = await prisma.proposal.update({ where: { id }, data: updateData });
+        break;
+      case 'crawler_status':
+        updated = await prisma.crawlerStatus.update({ where: { id }, data: updateData });
+        break;
+      default:
+        return res.status(400).json({ error: `Edição da tabela '${name}' não suportada.` });
+    }
+
+    return res.json({ success: true, updated, message: `Registro ID ${id} na tabela '${name}' atualizado com sucesso.` });
+  } catch (err: any) {
+    console.error('Error updating table row:', err);
+    return res.status(500).json({ error: 'Erro ao atualizar registro na tabela.', details: err.message });
+  }
+});
+
+// DELETE /admin/api/database/table/:name/:id - Delete specific row in table
+router.delete('/table/:name/:id', requireAdminAuth, async (req: AdminAuthRequest, res: Response) => {
+  try {
+    const { name, id } = req.params;
+
+    switch (name.toLowerCase()) {
+      case 'users':
+        await prisma.$transaction([
+          prisma.userSettings.deleteMany({ where: { userId: id } }),
+          prisma.userEvaluation.deleteMany({ where: { userId: id } }),
+          prisma.candidateAnnotation.deleteMany({ where: { userId: id } }),
+          prisma.user.delete({ where: { id } }),
+        ]);
+        break;
+      case 'candidates':
+        await prisma.candidate.delete({ where: { id } });
+        break;
+      case 'user_evaluations':
+        await prisma.userEvaluation.delete({ where: { id } });
+        break;
+      case 'user_settings':
+        await prisma.userSettings.delete({ where: { id } });
+        break;
+      case 'cargos':
+        await prisma.cargo.delete({ where: { id } });
+        break;
+      case 'election_years':
+        await prisma.electionYear.delete({ where: { id } });
+        break;
+      case 'proposals':
+        await prisma.proposal.delete({ where: { id } });
+        break;
+      case 'crawler_status':
+        await prisma.crawlerStatus.delete({ where: { id } });
+        break;
+      default:
+        return res.status(400).json({ error: `Exclusão na tabela '${name}' não suportada.` });
+    }
+
+    return res.json({ success: true, message: `Linha ID ${id} removida com sucesso da tabela '${name}'.` });
+  } catch (err: any) {
+    console.error('Error deleting table row:', err);
+    return res.status(500).json({ error: 'Erro ao deletar linha da tabela.', details: err.message });
+  }
+});
+
 export default router;

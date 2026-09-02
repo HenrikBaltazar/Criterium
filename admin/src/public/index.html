@@ -39,20 +39,17 @@
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
-      flexDirection: column;
+      flex-direction: column;
       overflow-x: hidden;
     }
 
-    /* Glassmorphic Container */
     .glass-card {
       background: var(--bg-secondary);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
     }
 
-    /* Header Bar */
     header {
       height: 60px;
       background: var(--bg-secondary);
@@ -64,6 +61,7 @@
       position: sticky;
       top: 0;
       z-index: 50;
+      width: 100%;
     }
 
     .brand {
@@ -114,29 +112,29 @@
       box-shadow: 0 0 8px var(--accent-green);
     }
 
-    /* Layout */
     .app-layout {
       display: flex;
       flex: 1;
+      width: 100%;
       min-height: calc(100vh - 60px);
     }
 
-    /* Sidebar */
     aside {
-      width: 240px;
+      width: 250px;
       background: var(--bg-secondary);
       border-right: 1px solid var(--border-subtle);
-      padding: 20px 12px;
+      padding: 20px 14px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .nav-btn {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 14px;
+      padding: 11px 14px;
       border-radius: var(--radius-sm);
       color: var(--text-muted);
       background: transparent;
@@ -157,13 +155,14 @@
     .nav-btn.active {
       background: var(--border-strong);
       color: var(--text-main);
+      font-weight: 700;
     }
 
-    /* Main Content Area */
     main {
       flex: 1;
-      padding: 24px;
+      padding: 28px;
       overflow-y: auto;
+      width: 100%;
     }
 
     .view-section {
@@ -174,7 +173,6 @@
       display: block;
     }
 
-    /* Metrics Cards Grid */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -203,10 +201,9 @@
       color: var(--text-main);
     }
 
-    /* Charts Section */
     .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
       gap: 20px;
       margin-bottom: 24px;
     }
@@ -221,7 +218,6 @@
       margin-bottom: 16px;
     }
 
-    /* Tables */
     .data-table-container {
       overflow-x: auto;
       border-radius: var(--radius-md);
@@ -241,23 +237,27 @@
       padding: 12px 16px;
       font-weight: 700;
       border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
     }
 
     td {
       padding: 12px 16px;
       border-bottom: 1px solid var(--border-subtle);
       color: var(--text-main);
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     tr:hover td {
       background: rgba(255, 255, 255, 0.02);
     }
 
-    /* Buttons & Badges */
     .btn {
-      padding: 8px 14px;
+      padding: 7px 12px;
       border-radius: var(--radius-sm);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
       border: none;
       cursor: pointer;
@@ -274,6 +274,11 @@
     .btn-danger {
       background: var(--accent-red);
       color: #fff;
+    }
+
+    .btn-warning {
+      background: var(--accent-amber);
+      color: #000;
     }
 
     .btn-primary {
@@ -304,7 +309,16 @@
       color: var(--text-muted);
     }
 
-    /* Login Modal Overlay */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+    }
+
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -340,6 +354,19 @@
     input:focus, textarea:focus, select:focus {
       border-color: var(--border-strong);
     }
+
+    .log-box {
+      background: #000;
+      color: #10b981;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.82rem;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      max-height: 450px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      border: 1px solid var(--border-strong);
+    }
   </style>
 </head>
 <body>
@@ -360,6 +387,19 @@
         <div id="loginError" style="color: var(--accent-red); font-size: 0.8rem; margin-bottom: 14px; display: none;"></div>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">Autenticar no Banco</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Edit Row Modal -->
+  <div id="editRowModal" class="modal-overlay" style="display: none;">
+    <div class="glass-card" style="width: 100%; max-width: 600px; padding: 24px;">
+      <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 12px;">Editar Registro na Tabela (<span id="editTableName">--</span>)</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">Modifique os campos JSON do registro e clique em salvar.</p>
+      <textarea id="editRowJson" rows="12" style="font-family: monospace; font-size: 0.82rem;"></textarea>
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+        <button class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveRowEdit()">Salvar Alterações</button>
+      </div>
     </div>
   </div>
 
@@ -384,7 +424,7 @@
       <button class="nav-btn" onclick="switchTab('users', this)">👥 Gestão de Usuários</button>
       <button class="nav-btn" onclick="switchTab('database', this)">🔍 Navegador do Banco</button>
       <button class="nav-btn" onclick="switchTab('sql', this)">💻 Console SQL Debugger</button>
-      <button class="nav-btn" onclick="switchTab('crawler', this)">🕷️ Status do Crawler</button>
+      <button class="nav-btn" onclick="switchTab('crawler', this)">🕷️ Status & Logs do Crawler</button>
     </aside>
 
     <main>
@@ -425,7 +465,7 @@
       <div id="tab-users" class="view-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h2 style="font-size: 1.2rem; font-weight: 700;">Gerenciamento Direto de Usuários</h2>
-          <input type="text" id="userSearch" placeholder="Buscar por nome, e-mail ou ID..." style="max-width: 300px;" onkeyup="loadUsers()">
+          <input type="text" id="userSearch" placeholder="Buscar por nome, e-mail ou ID..." style="max-width: 300px;" onkeyup="loadUsers(1)">
         </div>
 
         <div class="data-table-container glass-card">
@@ -444,14 +484,22 @@
               <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Carregando usuários...</td></tr>
             </tbody>
           </table>
+
+          <div class="pagination-bar">
+            <span id="usersPaginationInfo">Página 1 de 1 (50 itens por página)</span>
+            <div style="display: flex; gap: 8px;">
+              <button id="usersPrevBtn" class="btn btn-secondary" onclick="changeUsersPage(-1)">Anterior</button>
+              <button id="usersNextBtn" class="btn btn-secondary" onclick="changeUsersPage(1)">Próxima</button>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- TAB 3: DATABASE BROWSER -->
       <div id="tab-database" class="view-section">
-        <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center;">
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
           <label style="font-weight: 700; font-size: 0.9rem;">Selecione a Tabela:</label>
-          <select id="dbTableSelect" style="max-width: 260px;" onchange="loadTableRows()">
+          <select id="dbTableSelect" style="max-width: 260px;" onchange="loadTableRows(1)">
             <option value="users">users</option>
             <option value="candidates">candidates</option>
             <option value="user_evaluations">user_evaluations</option>
@@ -461,11 +509,25 @@
             <option value="proposals">proposals</option>
             <option value="crawler_status">crawler_status</option>
           </select>
+          <span style="color: var(--text-muted); font-size: 0.8rem;">(50 registros por página)</span>
         </div>
 
         <div class="data-table-container glass-card">
-          <div id="dbRowsContainer" style="padding: 16px; font-family: monospace; font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap;">
-            Selecione uma tabela para visualizar dados.
+          <table id="dbDynamicTable">
+            <thead id="dbDynamicHeader">
+              <tr><th>Carregando tabela...</th></tr>
+            </thead>
+            <tbody id="dbDynamicBody">
+              <tr><td style="text-align: center;">Carregando registros...</td></tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <span id="dbPaginationInfo">Página 1 de 1 (50 itens por página)</span>
+            <div style="display: flex; gap: 8px;">
+              <button id="dbPrevBtn" class="btn btn-secondary" onclick="changeDbPage(-1)">Anterior</button>
+              <button id="dbNextBtn" class="btn btn-secondary" onclick="changeDbPage(1)">Próxima</button>
+            </div>
           </div>
         </div>
       </div>
@@ -474,7 +536,7 @@
       <div id="tab-sql" class="view-section">
         <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
           <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">Console SQL (Consulta Direta no PostgreSQL)</h3>
-          <textarea id="sqlInput" rows="4" placeholder="SELECT id, name, email FROM users ORDER BY &quot;createdAt&quot; DESC LIMIT 10;"></textarea>
+          <textarea id="sqlInput" rows="4" placeholder="SELECT id, name, email FROM users ORDER BY &quot;createdAt&quot; DESC LIMIT 50;"></textarea>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
             <span id="sqlExecutionInfo" style="font-size: 0.8rem; color: var(--text-muted);"></span>
             <button class="btn btn-primary" onclick="runSqlQuery()">Executar SQL</button>
@@ -488,18 +550,28 @@
         </div>
       </div>
 
-      <!-- TAB 5: CRAWLER STATUS -->
+      <!-- TAB 5: CRAWLER STATUS & LOGS -->
       <div id="tab-crawler" class="view-section">
-        <div class="glass-card" style="padding: 24px; max-width: 600px;">
-          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Controle do Crawler Oficial TSE</h3>
-          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem;">
-            <div><strong>Status Atual:</strong> <span id="crawlerStatusBadge" class="badge">--</span></div>
-            <div><strong>Candidatos Coletados:</strong> <span id="crawlerFetchedCount">0</span></div>
-            <div><strong>Último Heartbeat:</strong> <span id="crawlerHeartbeat">--</span></div>
-            <div style="margin-top: 14px; display: flex; gap: 10px;">
-              <button class="btn btn-primary" onclick="toggleCrawler('ativo')">Ativar Crawler</button>
-              <button class="btn btn-secondary" onclick="toggleCrawler('desativado')">Pausar Crawler</button>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px;">
+          <div class="glass-card" style="padding: 24px;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Controle do Crawler TSE</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem;">
+              <div><strong>Status Atual:</strong> <span id="crawlerStatusBadge" class="badge">--</span></div>
+              <div><strong>Candidatos Coletados:</strong> <span id="crawlerFetchedCount">0</span></div>
+              <div><strong>Último Heartbeat:</strong> <span id="crawlerHeartbeat">--</span></div>
+              <div style="margin-top: 14px; display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="toggleCrawler('ativo')">Ativar Crawler</button>
+                <button class="btn btn-secondary" onclick="toggleCrawler('desativado')">Pausar Crawler</button>
+              </div>
             </div>
+          </div>
+
+          <div class="glass-card" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="font-size: 1.1rem; font-weight: 700;">Logs do Crawler em Tempo Real</h3>
+              <button class="btn btn-secondary" onclick="loadCrawlerLogs()">Atualizar Logs</button>
+            </div>
+            <div class="log-box" id="crawlerLogConsole">Carregando logs do crawler...</div>
           </div>
         </div>
       </div>
@@ -510,6 +582,16 @@
     let adminToken = localStorage.getItem('criterium_admin_token') || '';
     let partyChartInstance = null;
     let cargoChartInstance = null;
+
+    let currentUsersPage = 1;
+    let totalUsersPages = 1;
+
+    let currentDbPage = 1;
+    let totalDbPages = 1;
+
+    let currentEditingTable = '';
+    let currentEditingId = '';
+    let currentEditingData = null;
 
     if (adminToken) {
       document.getElementById('authModal').style.display = 'none';
@@ -556,9 +638,9 @@
       document.getElementById('tab-' + tabId).classList.add('active');
       btnElem.classList.add('active');
 
-      if (tabId === 'users') loadUsers();
-      if (tabId === 'database') loadTableRows();
-      if (tabId === 'crawler') loadCrawlerStatus();
+      if (tabId === 'users') loadUsers(1);
+      if (tabId === 'database') loadTableRows(1);
+      if (tabId === 'crawler') { loadCrawlerStatus(); loadCrawlerLogs(); }
     }
 
     async function initDashboard() {
@@ -612,9 +694,10 @@
       });
     }
 
-    async function loadUsers() {
+    async function loadUsers(page = 1) {
+      currentUsersPage = page;
       const q = document.getElementById('userSearch').value;
-      const res = await fetch('/admin/api/users?q=' + encodeURIComponent(q), {
+      const res = await fetch(`/admin/api/users?q=${encodeURIComponent(q)}&page=${page}&limit=50`, {
         headers: { 'Authorization': 'Bearer ' + adminToken }
       });
       const data = await res.json();
@@ -625,6 +708,12 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum usuário encontrado.</td></tr>';
         return;
       }
+
+      totalUsersPages = data.pagination.totalPages || 1;
+      document.getElementById('usersPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalUsersPages} (${data.pagination.total} usuários cadastrados - 50/pág)`;
+
+      document.getElementById('usersPrevBtn').disabled = currentUsersPage <= 1;
+      document.getElementById('usersNextBtn').disabled = currentUsersPage >= totalUsersPages;
 
       data.users.forEach(u => {
         const tr = document.createElement('tr');
@@ -642,6 +731,13 @@
       });
     }
 
+    function changeUsersPage(delta) {
+      const target = currentUsersPage + delta;
+      if (target >= 1 && target <= totalUsersPages) {
+        loadUsers(target);
+      }
+    }
+
     async function deleteUser(id, name) {
       if (!confirm(`Tem certeza absoluta que deseja DELETAR o usuário '${name}'?\nTodas as avaliações e configurações dele serão removidas do banco de dados.`)) return;
 
@@ -651,17 +747,124 @@
       });
       const data = await res.json();
       alert(data.message || data.error);
-      loadUsers();
+      loadUsers(currentUsersPage);
       initDashboard();
     }
 
-    async function loadTableRows() {
+    async function loadTableRows(page = 1) {
+      currentDbPage = page;
       const tableName = document.getElementById('dbTableSelect').value;
-      const res = await fetch('/admin/api/database/table/' + tableName, {
+      const res = await fetch(`/admin/api/database/table/${tableName}?page=${page}&limit=50`, {
         headers: { 'Authorization': 'Bearer ' + adminToken }
       });
       const data = await res.json();
-      document.getElementById('dbRowsContainer').innerText = JSON.stringify(data.rows, null, 2);
+
+      const thead = document.getElementById('dbDynamicHeader');
+      const tbody = document.getElementById('dbDynamicBody');
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      if (!data.rows || data.rows.length === 0) {
+        thead.innerHTML = '<tr><th>Tabela Vazia</th></tr>';
+        tbody.innerHTML = '<tr><td style="text-align: center; color: var(--text-muted);">Nenhum registro encontrado nesta tabela.</td></tr>';
+        return;
+      }
+
+      totalDbPages = data.pagination.totalPages || 1;
+      document.getElementById('dbPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalDbPages} (${data.pagination.total} registros - 50/pág)`;
+
+      document.getElementById('dbPrevBtn').disabled = currentDbPage <= 1;
+      document.getElementById('dbNextBtn').disabled = currentDbPage >= totalDbPages;
+
+      const sampleKeys = Object.keys(data.rows[0]).slice(0, 6);
+      const trHeader = document.createElement('tr');
+      sampleKeys.forEach(k => {
+        const th = document.createElement('th');
+        th.innerText = k;
+        trHeader.appendChild(th);
+      });
+      const thActions = document.createElement('th');
+      thActions.innerText = 'Ações Diretas';
+      trHeader.appendChild(thActions);
+      thead.appendChild(trHeader);
+
+      data.rows.forEach(row => {
+        const tr = document.createElement('tr');
+        sampleKeys.forEach(k => {
+          const td = document.createElement('td');
+          const val = row[k];
+          td.innerText = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
+          tr.appendChild(td);
+        });
+
+        const tdActions = document.createElement('td');
+        tdActions.innerHTML = `
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-warning" onclick="openEditRowModal('${tableName}', '${row.id}', ${escapeHtml(JSON.stringify(row))})">Editar</button>
+            <button class="btn btn-danger" onclick="deleteTableRow('${tableName}', '${row.id}')">Deletar</button>
+          </div>
+        `;
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    }
+
+    function changeDbPage(delta) {
+      const target = currentDbPage + delta;
+      if (target >= 1 && target <= totalDbPages) {
+        loadTableRows(target);
+      }
+    }
+
+    function openEditRowModal(table, id, rowData) {
+      currentEditingTable = table;
+      currentEditingId = id;
+      currentEditingData = rowData;
+
+      document.getElementById('editTableName').innerText = `${table} (ID: ${id})`;
+      document.getElementById('editRowJson').value = JSON.stringify(rowData, null, 2);
+      document.getElementById('editRowModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editRowModal').style.display = 'none';
+    }
+
+    async function saveRowEdit() {
+      try {
+        const jsonText = document.getElementById('editRowJson').value;
+        const parsed = JSON.parse(jsonText);
+
+        const res = await fetch(`/admin/api/database/table/${currentEditingTable}/${currentEditingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify(parsed)
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+        if (res.ok) {
+          closeEditModal();
+          loadTableRows(currentDbPage);
+        }
+      } catch (err) {
+        alert('JSON inválido! Verifique a sintaxe antes de salvar.');
+      }
+    }
+
+    async function deleteTableRow(table, id) {
+      if (!confirm(`Tem certeza que deseja DELETAR a linha ID '${id}' da tabela '${table}'?`)) return;
+
+      const res = await fetch(`/admin/api/database/table/${table}/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + adminToken }
+      });
+      const data = await res.json();
+      alert(data.message || data.error);
+      loadTableRows(currentDbPage);
     }
 
     async function runSqlQuery() {
@@ -696,6 +899,18 @@
       document.getElementById('crawlerHeartbeat').innerText = data.lastHeartbeat ? new Date(data.lastHeartbeat).toLocaleString('pt-BR') : '--';
     }
 
+    async function loadCrawlerLogs() {
+      const logBox = document.getElementById('crawlerLogConsole');
+      logBox.innerText = 'Buscando logs em tempo real...';
+
+      const res = await fetch('/admin/api/crawler/logs', {
+        headers: { 'Authorization': 'Bearer ' + adminToken }
+      });
+      const data = await res.json();
+      logBox.innerText = data.logs || 'Nenhum log encontrado.';
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
     async function toggleCrawler(status) {
       const res = await fetch('/admin/api/crawler/toggle', {
         method: 'POST',
@@ -705,6 +920,7 @@
       const data = await res.json();
       alert(data.message);
       loadCrawlerStatus();
+      loadCrawlerLogs();
     }
   </script>
 </body>

@@ -352,6 +352,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [perfPoints, setPerfPoints] = useState<number>(0);
 
   const [isApplying, setIsApplying] = useState<boolean>(false);
+  const [isResetRulesModalOpen, setIsResetRulesModalOpen] = useState(false);
   const [isResetEvaluationsModalOpen, setIsResetEvaluationsModalOpen] = useState(false);
   const [isResettingEvaluations, setIsResettingEvaluations] = useState(false);
   const [resetEvaluationsSuccess, setResetEvaluationsSuccess] = useState(false);
@@ -385,11 +386,15 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   }, [settings]);
 
   const handleAddRule = (newRule: Omit<AutoScoreRule, 'id'>) => {
-    const created: AutoScoreRule = {
+    if (!user && onRequireAuth) {
+      onRequireAuth();
+      return;
+    }
+    const ruleWithId: AutoScoreRule = {
       ...newRule,
-      id: `rule-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `rule_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     };
-    setRules((prev) => [...prev, created]);
+    setRules((prev) => [...prev, ruleWithId]);
   };
 
   const handleDeleteRule = (id: string) => {
@@ -412,11 +417,15 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const handleReset = async () => {
+  const handleResetClick = () => {
     if (!user && onRequireAuth) {
       onRequireAuth();
       return;
     }
+    setIsResetRulesModalOpen(true);
+  };
+
+  const handleResetConfirm = async () => {
     setIsApplying(true);
     setRules([]);
     await updateSettings({
@@ -425,6 +434,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
     });
     window.dispatchEvent(new Event('criterium_rules_updated'));
     setIsApplying(false);
+    setIsResetRulesModalOpen(false);
     setResetSuccess(true);
     setTimeout(() => setResetSuccess(false), 2500);
   };
@@ -493,7 +503,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
 
           <button
             disabled={isApplying}
-            onClick={handleReset}
+            onClick={handleResetClick}
             className="btn btn-outline"
             style={{
               display: 'flex',
@@ -521,6 +531,52 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal for Resetting Rules */}
+      {isResetRulesModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div className="glass-card" style={{ maxWidth: '440px', width: '100%', padding: '24px', textAlign: 'center' }}>
+            <AlertOctagon size={42} color="var(--accent-red, #ef4444)" style={{ marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-main)' }}>Confirmar Reset de Regras?</h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.5 }}>
+              Tem certeza que deseja remover todas as suas regras de pontuação automática e restaurar as configurações padrão? Esta ação não pode ser desfeita.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setIsResetRulesModalOpen(false)}
+                className="btn btn-outline"
+                style={{ padding: '10px 18px', fontWeight: 700 }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleResetConfirm}
+                className="btn"
+                style={{ padding: '10px 18px', fontWeight: 700, background: 'var(--accent-red, #ef4444)', color: '#fff' }}
+              >
+                Sim, Resetar Regras
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Component Rules Sections */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
