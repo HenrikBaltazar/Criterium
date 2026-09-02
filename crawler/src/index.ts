@@ -7,24 +7,26 @@ import { startRollingSyncEngine } from './rollingSyncEngine';
 
 const prisma = new PrismaClient();
 
+import { parseAndNormalizeUrlString } from './enrich_social_links';
+
 function buildSocialLinksJson(sites?: string[]): string | null {
   if (!Array.isArray(sites) || sites.length === 0) return null;
-  const result: Record<string, any> = { links: sites };
+  const result: Record<string, any> = { links: [] };
 
   sites.forEach((u) => {
     if (!u || typeof u !== 'string') return;
-    const lower = u.toLowerCase();
-    if ((lower.includes('instagram.com') || lower.includes('instagr.am')) && !result.instagram) result.instagram = u;
-    else if ((lower.includes('twitter.com') || lower.includes('x.com')) && !result.twitter) result.twitter = u;
-    else if ((lower.includes('facebook.com') || lower.includes('fb.com') || lower.includes('fb.watch')) && !result.facebook) result.facebook = u;
-    else if ((lower.includes('youtube.com') || lower.includes('youtu.be')) && !result.youtube) result.youtube = u;
-    else if (lower.includes('tiktok.com') && !result.tiktok) result.tiktok = u;
-    else if (lower.includes('linkedin.com') && !result.linkedin) result.linkedin = u;
-    else if (lower.includes('flickr.com') && !result.flickr) result.flickr = u;
-    else if (!result.website) result.website = u;
+    const parsed = parseAndNormalizeUrlString(u);
+    if (parsed) {
+      if (!result.links.includes(parsed.url)) {
+        result.links.push(parsed.url);
+      }
+      if (!result[parsed.key]) {
+        result[parsed.key] = parsed.url;
+      }
+    }
   });
 
-  return JSON.stringify(result);
+  return result.links.length > 0 ? JSON.stringify(result) : null;
 }
 
 const UFS = [

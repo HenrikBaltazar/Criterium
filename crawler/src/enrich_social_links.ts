@@ -3,24 +3,102 @@ import { fetchTseJson } from './tseFetcher';
 
 const prisma = new PrismaClient();
 
+export function parseAndNormalizeUrlString(raw: string): { key: string; url: string } | null {
+  if (!raw || typeof raw !== 'string') return null;
+  let str = raw.trim().replace(/^(https?:\/\/)+/gi, '');
+  const lower = str.toLowerCase();
+
+  const extractHandle = (input: string) => {
+    let clean = input.replace(/^(tik\s*tok|instagram|facebook|twitter|youtube|x|linkedin|flickr|kwai|bsky)\s*[:\-]?\s*/i, '');
+    clean = clean.replace(/^@/, '').trim().replace(/^\/+/, '');
+    return clean;
+  };
+
+  if (lower.includes('instagram.com') || lower.includes('instagr.am') || lower.includes('threads.net') || lower.includes('threads.com') || lower.startsWith('instagram') || (str.startsWith('@') && !str.includes('.'))) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = (lower.includes('http') || lower.includes('.com')) && lower.includes('instagram') ? `https://${str}` : `https://www.instagram.com/${handle}`;
+    return { key: 'instagram', url: fullUrl };
+  }
+  if (lower.includes('tiktok.com') || lower.startsWith('tik tok') || lower.startsWith('tiktok')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = (lower.includes('http') || lower.includes('.com')) && lower.includes('tiktok') ? `https://${str}` : `https://www.tiktok.com/@${handle}`;
+    return { key: 'tiktok', url: fullUrl };
+  }
+  if (lower.includes('twitter.com') || lower.includes('x.com') || lower.startsWith('x -') || lower.startsWith('x:') || lower.startsWith('twitter')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = ((lower.includes('http') || lower.includes('.com')) && (lower.includes('twitter') || lower.includes('x.com'))) ? `https://${str}` : `https://x.com/${handle}`;
+    return { key: 'twitter', url: fullUrl };
+  }
+  if (lower.includes('youtube.com') || lower.includes('youtu.be') || lower.startsWith('youtube')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = ((lower.includes('http') || lower.includes('.com')) && (lower.includes('youtube') || lower.includes('youtu.be'))) ? `https://${str}` : `https://www.youtube.com/@${handle}`;
+    return { key: 'youtube', url: fullUrl };
+  }
+  if (lower.includes('facebook.com') || lower.includes('fb.com') || lower.includes('fb.watch') || lower.startsWith('facebook')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = ((lower.includes('http') || lower.includes('.com')) && (lower.includes('facebook') || lower.includes('fb.com'))) ? `https://${str}` : `https://www.facebook.com/${handle}`;
+    return { key: 'facebook', url: fullUrl };
+  }
+  if (lower.includes('linkedin.com') || lower.startsWith('linkedin')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = lower.includes('http') && lower.includes('linkedin.com') ? `https://${str}` : `https://www.linkedin.com/in/${handle}`;
+    return { key: 'linkedin', url: fullUrl };
+  }
+  if (lower.includes('flickr.com') || lower.startsWith('flickr')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = lower.includes('http') && lower.includes('flickr.com') ? `https://${str}` : `https://www.flickr.com/photos/${handle}`;
+    return { key: 'flickr', url: fullUrl };
+  }
+  if (lower.includes('kwai.com') || lower.includes('kwai-video.com') || lower.startsWith('kwai')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = lower.includes('http') && lower.includes('kwai') ? `https://${str}` : `https://www.kwai.com/@${handle}`;
+    return { key: 'kwai', url: fullUrl };
+  }
+  if (lower.includes('bsky.app') || lower.includes('bsky.social') || lower.startsWith('bsky')) {
+    const handle = extractHandle(str);
+    if (!handle) return null;
+    const fullUrl = lower.includes('http') && lower.includes('bsky') ? `https://${str}` : `https://bsky.app/profile/${handle}`;
+    return { key: 'bluesky', url: fullUrl };
+  }
+  if (str.includes('.') && !str.includes('@') && !str.includes(' ') && !str.includes(':')) {
+    const fullUrl = `https://${str}`;
+    try {
+      const parsed = new URL(fullUrl);
+      const hostname = parsed.hostname.replace(/^www\./, '');
+      if (hostname.length > 3 && hostname.includes('.')) {
+        return { key: 'website', url: fullUrl };
+      }
+    } catch {}
+  }
+  return null;
+}
+
 function buildSocialLinksJson(sites?: string[]): string | null {
   if (!Array.isArray(sites) || sites.length === 0) return null;
-  const result: Record<string, any> = { links: sites };
+  const result: Record<string, any> = { links: [] };
 
   sites.forEach((u) => {
     if (!u || typeof u !== 'string') return;
-    const lower = u.toLowerCase();
-    if ((lower.includes('instagram.com') || lower.includes('instagr.am')) && !result.instagram) result.instagram = u;
-    else if ((lower.includes('twitter.com') || lower.includes('x.com')) && !result.twitter) result.twitter = u;
-    else if ((lower.includes('facebook.com') || lower.includes('fb.com') || lower.includes('fb.watch')) && !result.facebook) result.facebook = u;
-    else if ((lower.includes('youtube.com') || lower.includes('youtu.be')) && !result.youtube) result.youtube = u;
-    else if (lower.includes('tiktok.com') && !result.tiktok) result.tiktok = u;
-    else if (lower.includes('linkedin.com') && !result.linkedin) result.linkedin = u;
-    else if (lower.includes('flickr.com') && !result.flickr) result.flickr = u;
-    else if (!result.website) result.website = u;
+    const parsed = parseAndNormalizeUrlString(u);
+    if (parsed) {
+      if (!result.links.includes(parsed.url)) {
+        result.links.push(parsed.url);
+      }
+      if (!result[parsed.key]) {
+        result[parsed.key] = parsed.url;
+      }
+    }
   });
 
-  return JSON.stringify(result);
+  return result.links.length > 0 ? JSON.stringify(result) : null;
 }
 
 export async function enrichSocialLinks() {
@@ -44,7 +122,7 @@ export async function enrichSocialLinks() {
     const candidate = candidates[i];
     let allUrls: string[] = [];
 
-    // 1. Extrai URLs já salvas no banco de dados
+    // 1. Extrai URLs já salvas no banco de dados e as re-higieniza
     if (candidate.socialLinks) {
       try {
         const parsed = JSON.parse(candidate.socialLinks);
@@ -63,27 +141,9 @@ export async function enrichSocialLinks() {
       } catch (e) {}
     }
 
-    // 2. Se candidato tem sqCandidato e poucas URLs (ou nenhuma), busca diretamente na API do TSE
-    if (allUrls.length <= 1 && candidate.sqCandidato) {
-      try {
-        const uf = candidate.state || 'BR';
-        const url = `https://divulgacandcontas.tse.jus.br/divulga/rest/v1/candidatura/buscar/2026/${uf}/20322002026/candidato/${candidate.sqCandidato}`;
-        const detail: any = await fetchTseJson(url, 1, 1000);
-        if (detail?.sites && Array.isArray(detail.sites)) {
-          detail.sites.forEach((siteUrl: string) => {
-            if (typeof siteUrl === 'string' && !allUrls.includes(siteUrl)) {
-              allUrls.push(siteUrl);
-            }
-          });
-        }
-      } catch (err) {
-        // Ignora erro individual de fetch do TSE
-      }
-    }
-
     if (allUrls.length > 0) {
       const enrichedJson = buildSocialLinksJson(allUrls);
-      if (enrichedJson && enrichedJson !== candidate.socialLinks) {
+      if (enrichedJson !== candidate.socialLinks) {
         await prisma.candidate.update({
           where: { id: candidate.id },
           data: { socialLinks: enrichedJson },
