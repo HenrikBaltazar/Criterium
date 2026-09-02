@@ -144,11 +144,14 @@ export function calculateCandidateScore(
             }
           } else if (r.component === 'PERFORMANCE' && candidateData?.publicPerformance) {
             const rate = candidateData.publicPerformance.attendanceRate || 0;
-            const minOk = r.minValue == null || rate >= r.minValue;
+            const minOk = r.minValue == null || r.minValue === 0 || rate >= r.minValue;
             const maxOk = r.maxValue == null || r.maxValue === 0 || rate <= r.maxValue;
             if (minOk && maxOk) {
               matches = true;
-              label = `Regra Assiduidade (${rate}% presenças)`;
+              const isMaxRule = r.maxValue != null && r.maxValue > 0 && (r.minValue == null || r.minValue === 0);
+              label = isMaxRule
+                ? `Regra Assiduidade Máxima (≤${r.maxValue}% - candidato tem ${rate}%)`
+                : `Regra Assiduidade Mínima (≥${r.minValue || 0}% - candidato tem ${rate}%)`;
             }
           }
 

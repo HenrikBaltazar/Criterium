@@ -331,6 +331,46 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   );
 };
 
+function formatMultiItemRuleBadge(r: AutoScoreRule, componentType: 'PARTY' | 'EDUCATION' | 'OCCUPATION') {
+  const cargoTag = `[${r.cargo || 'TODOS'}]`;
+  const rawCat = r.categoryValue || '';
+  const items = rawCat
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  let badgeText = '';
+  let tooltipText = '';
+
+  if (componentType === 'PARTY') {
+    if (items.length > 1) {
+      badgeText = `${cargoTag} ${items.length} partidos selecionados`;
+      tooltipText = `Partidos: ${items.join(', ')}`;
+    } else {
+      badgeText = `${cargoTag} Partido ${items[0] || rawCat}`;
+      tooltipText = `Partido: ${items[0] || rawCat}`;
+    }
+  } else if (componentType === 'EDUCATION') {
+    if (items.length > 1) {
+      badgeText = `${cargoTag} ${items.length} graus de instrução selecionados`;
+      tooltipText = `Graus de instrução: ${items.join(', ')}`;
+    } else {
+      badgeText = `${cargoTag} Instrução ${items[0] || rawCat}`;
+      tooltipText = `Instrução: ${items[0] || rawCat}`;
+    }
+  } else if (componentType === 'OCCUPATION') {
+    if (items.length > 1) {
+      badgeText = `${cargoTag} ${items.length} ocupações selecionadas`;
+      tooltipText = `Ocupações: ${items.join(', ')}`;
+    } else {
+      badgeText = `${cargoTag} Ocupação ${items[0] || rawCat}`;
+      tooltipText = `Ocupação: ${items[0] || rawCat}`;
+    }
+  }
+
+  return { badgeText, tooltipText };
+}
+
 export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToDashboard }) => {
   const { settings, updateSettings, user } = useApp();
   const [rules, setRules] = useState<AutoScoreRule[]>([]);
@@ -359,7 +399,8 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [expCargo, setExpCargo] = useState('TODOS');
   const [expPoints, setExpPoints] = useState<number>(0);
 
-  const [perfMin, setPerfMin] = useState('85');
+  const [perfMode, setPerfMode] = useState<'MIN' | 'MAX'>('MIN');
+  const [perfValue, setPerfValue] = useState('85');
   const [perfCargo, setPerfCargo] = useState('TODOS');
   const [perfPoints, setPerfPoints] = useState<number>(0);
 
@@ -631,20 +672,23 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {getRulesByComponent('PARTY').map((r) => (
-              <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] Partido(s) {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteRule(r.id)}
-                  title="Remover esta regra"
-                  aria-label="Remover regra"
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
-                >
-                  <X size={14} className="desktop-icon-allow" />
-                </button>
-              </span>
-            ))}
+            {getRulesByComponent('PARTY').map((r) => {
+              const { badgeText, tooltipText } = formatMultiItemRuleBadge(r, 'PARTY');
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'help' }} title={tooltipText}>
+                  <span>{badgeText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
 
@@ -686,20 +730,23 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {getRulesByComponent('EDUCATION').map((r) => (
-              <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] Instrução {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteRule(r.id)}
-                  title="Remover esta regra"
-                  aria-label="Remover regra"
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
-                >
-                  <X size={14} className="desktop-icon-allow" />
-                </button>
-              </span>
-            ))}
+            {getRulesByComponent('EDUCATION').map((r) => {
+              const { badgeText, tooltipText } = formatMultiItemRuleBadge(r, 'EDUCATION');
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'help' }} title={tooltipText}>
+                  <span>{badgeText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
 
@@ -803,20 +850,23 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {getRulesByComponent('OCCUPATION').map((r) => (
-              <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] Ocupação {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteRule(r.id)}
-                  title="Remover esta regra"
-                  aria-label="Remover regra"
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
-                >
-                  <X size={14} className="desktop-icon-allow" />
-                </button>
-              </span>
-            ))}
+            {getRulesByComponent('OCCUPATION').map((r) => {
+              const { badgeText, tooltipText } = formatMultiItemRuleBadge(r, 'OCCUPATION');
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'help' }} title={tooltipText}>
+                  <span>{badgeText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
 
@@ -889,22 +939,34 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 <option key={c} value={c}>Cargo: {c}</option>
               ))}
             </select>
+            <select
+              value={perfMode}
+              onChange={(e) => setPerfMode(e.target.value as 'MIN' | 'MAX')}
+              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
+            >
+              <option value="MIN">Assiduidade Mínima (≥)</option>
+              <option value="MAX">Assiduidade Máxima (≤)</option>
+            </select>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Assiduidade Mínima (%):</span>
               <input
                 type="number"
-                value={perfMin}
-                onChange={(e) => setPerfMin(e.target.value)}
-                placeholder="Ex: 85"
-                style={{ width: '80px', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
+                value={perfValue}
+                onChange={(e) => setPerfValue(e.target.value)}
+                placeholder={perfMode === 'MIN' ? "Ex: 85" : "Ex: 79"}
+                style={{ width: '85px', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
               />
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>%</span>
             </div>
             <NumberStepControl value={perfPoints} onChange={setPerfPoints} />
             <button
               onClick={() => {
-                const minVal = perfMin ? parseFloat(perfMin) : 0;
-                handleAddRule({ component: 'PERFORMANCE', minValue: minVal, cargo: perfCargo, points: perfPoints });
-                setPerfMin('85');
+                const val = perfValue ? parseFloat(perfValue) : 0;
+                if (perfMode === 'MIN') {
+                  handleAddRule({ component: 'PERFORMANCE', minValue: val, maxValue: 100, cargo: perfCargo, points: perfPoints });
+                } else {
+                  handleAddRule({ component: 'PERFORMANCE', minValue: 0, maxValue: val, cargo: perfCargo, points: perfPoints });
+                }
+                setPerfValue('85');
                 setPerfCargo('TODOS');
                 setPerfPoints(0);
               }}
@@ -915,20 +977,24 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {getRulesByComponent('PERFORMANCE').map((r) => (
-              <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] Assiduidade ≥ {r.minValue || 0}%: <strong>{formatPoints(r.points)}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteRule(r.id)}
-                  title="Remover esta regra"
-                  aria-label="Remover regra"
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
-                >
-                  <X size={14} className="desktop-icon-allow" />
-                </button>
-              </span>
-            ))}
+            {getRulesByComponent('PERFORMANCE').map((r) => {
+              const isMax = r.maxValue != null && r.maxValue > 0 && (r.minValue == null || r.minValue === 0);
+              const labelText = isMax ? `Assiduidade ≤ ${r.maxValue}%` : `Assiduidade ≥ ${r.minValue || 0}%`;
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }} title={labelText}>
+                  <span>[{r.cargo || 'TODOS'}] {labelText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
 
