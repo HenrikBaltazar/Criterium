@@ -108,7 +108,13 @@ export function calculateCandidateScore(
               label = `Regra Partido (${r.categoryValue})`;
             }
           } else if (r.component === 'EDUCATION' && candidateData?.education) {
-            if (candidateData.education.trim().toLowerCase() === (r.categoryValue || '').trim().toLowerCase()) {
+            const candEdu = candidateData.education.trim().toLowerCase();
+            const eduList = (r.categoryValue || '')
+              .split(',')
+              .map((e: string) => e.trim().toLowerCase())
+              .filter(Boolean);
+
+            if (eduList.includes(candEdu)) {
               matches = true;
               label = `Regra Instrução (${r.categoryValue})`;
             }
@@ -121,7 +127,13 @@ export function calculateCandidateScore(
               label = `Regra Patrimônio Declarado`;
             }
           } else if (r.component === 'OCCUPATION' && candidateData?.occupation) {
-            if (candidateData.occupation.trim().toLowerCase() === (r.categoryValue || '').trim().toLowerCase()) {
+            const candOcc = candidateData.occupation.trim().toLowerCase();
+            const occList = (r.categoryValue || '')
+              .split(',')
+              .map((o: string) => o.trim().toLowerCase())
+              .filter(Boolean);
+
+            if (occList.includes(candOcc)) {
               matches = true;
               label = `Regra Ocupação (${r.categoryValue})`;
             }

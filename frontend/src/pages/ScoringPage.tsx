@@ -183,13 +183,25 @@ const NumberStepControl: React.FC<NumberStepControlProps> = ({
   );
 };
 
-interface MultiPartySelectProps {
-  selectedParties: string[];
-  onChange: (parties: string[]) => void;
+interface MultiSelectDropdownProps {
+  selectedValues: string[];
+  onChange: (values: string[]) => void;
   options: string[];
+  placeholder: string;
+  itemSingularName: string;
+  itemPluralName: string;
+  minWidth?: string;
 }
 
-const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, onChange, options }) => {
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
+  selectedValues,
+  onChange,
+  options,
+  placeholder,
+  itemSingularName,
+  itemPluralName,
+  minWidth = '240px',
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -203,16 +215,16 @@ const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, on
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleParty = (party: string) => {
-    if (selectedParties.includes(party)) {
-      onChange(selectedParties.filter((p) => p !== party));
+  const toggleValue = (val: string) => {
+    if (selectedValues.includes(val)) {
+      onChange(selectedValues.filter((v) => v !== val));
     } else {
-      onChange([...selectedParties, party]);
+      onChange([...selectedValues, val]);
     }
   };
 
   const handleSelectAll = () => {
-    if (selectedParties.length === options.length) {
+    if (selectedValues.length === options.length) {
       onChange([]);
     } else {
       onChange([...options]);
@@ -220,14 +232,14 @@ const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, on
   };
 
   const buttonLabel = (() => {
-    if (selectedParties.length === 0) return 'Selecione os partidos...';
-    if (selectedParties.length === 1) return `1 partido (${selectedParties[0]})`;
-    if (selectedParties.length <= 3) return `${selectedParties.length} partidos (${selectedParties.join(', ')})`;
-    return `${selectedParties.length} partidos selecionados`;
+    if (selectedValues.length === 0) return placeholder;
+    if (selectedValues.length === 1) return `1 ${itemSingularName} (${selectedValues[0]})`;
+    if (selectedValues.length <= 3) return `${selectedValues.length} ${itemPluralName} (${selectedValues.join(', ')})`;
+    return `${selectedValues.length} ${itemPluralName} selecionado(s)`;
   })();
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block', minWidth: '240px', zIndex: isOpen ? 1000 : 10 }}>
+    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block', minWidth, zIndex: isOpen ? 1000 : 10 }}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -276,17 +288,17 @@ const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, on
               onClick={handleSelectAll}
               style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              {selectedParties.length === options.length ? 'Desmarcar Todos' : 'Marcar Todos'}
+              {selectedValues.length === options.length ? 'Desmarcar Todos' : 'Marcar Todos'}
             </button>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{selectedParties.length} selecionado(s)</span>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{selectedValues.length} selecionado(s)</span>
           </div>
 
           <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '4px' }}>
-            {options.map((p) => {
-              const isChecked = selectedParties.includes(p);
+            {options.map((opt) => {
+              const isChecked = selectedValues.includes(opt);
               return (
                 <label
-                  key={p}
+                  key={opt}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -305,10 +317,10 @@ const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, on
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={() => toggleParty(p)}
+                    onChange={() => toggleValue(opt)}
                     style={{ accentColor: 'var(--text-main)', cursor: 'pointer' }}
                   />
-                  <span>{p}</span>
+                  <span>{opt}</span>
                 </label>
               );
             })}
@@ -330,7 +342,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [partyCargo, setPartyCargo] = useState('TODOS');
   const [partyPoints, setPartyPoints] = useState<number>(0);
 
-  const [eduSelect, setEduSelect] = useState('');
+  const [selectedEdu, setSelectedEdu] = useState<string[]>([]);
   const [eduCargo, setEduCargo] = useState('TODOS');
   const [eduPoints, setEduPoints] = useState<number>(0);
 
@@ -339,7 +351,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [assetCargo, setAssetCargo] = useState('TODOS');
   const [assetPoints, setAssetPoints] = useState<number>(0);
 
-  const [occSelect, setOccSelect] = useState('');
+  const [selectedOcc, setSelectedOcc] = useState<string[]>([]);
   const [occCargo, setOccCargo] = useState('TODOS');
   const [occPoints, setOccPoints] = useState<number>(0);
 
@@ -594,10 +606,13 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 <option key={c} value={c}>Cargo: {c}</option>
               ))}
             </select>
-            <MultiPartySelect
-              selectedParties={selectedParties}
+            <MultiSelectDropdown
+              selectedValues={selectedParties}
               onChange={setSelectedParties}
               options={PARTY_OPTIONS}
+              placeholder="Selecione os partidos..."
+              itemSingularName="partido"
+              itemPluralName="partidos"
             />
             <NumberStepControl value={partyPoints} onChange={setPartyPoints} />
             <button
@@ -634,7 +649,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
         </div>
 
         {/* 2. Grau de Instrução */}
-        <div className="glass-card" style={{ padding: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px', position: 'relative', zIndex: 40 }}>
           <h3 style={{ fontSize: '1.05rem', margin: '0 0 12px 0', fontWeight: 700 }}>2. Grau de Instrução</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
             <select
@@ -646,28 +661,26 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 <option key={c} value={c}>Cargo: {c}</option>
               ))}
             </select>
-            <select
-              value={eduSelect}
-              onChange={(e) => setEduSelect(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
-            >
-              <option value="">Selecione o grau de instrução</option>
-              {EDUCATION_OPTIONS.map((e) => (
-                <option key={e} value={e}>{e}</option>
-              ))}
-            </select>
+            <MultiSelectDropdown
+              selectedValues={selectedEdu}
+              onChange={setSelectedEdu}
+              options={EDUCATION_OPTIONS}
+              placeholder="Selecione o grau de instrução..."
+              itemSingularName="grau de instrução"
+              itemPluralName="graus de instrução"
+            />
             <NumberStepControl value={eduPoints} onChange={setEduPoints} />
             <button
-              disabled={!eduSelect}
+              disabled={selectedEdu.length === 0}
               onClick={() => {
-                if (!eduSelect) return;
-                handleAddRule({ component: 'EDUCATION', categoryValue: eduSelect, cargo: eduCargo, points: eduPoints });
-                setEduSelect('');
+                if (selectedEdu.length === 0) return;
+                handleAddRule({ component: 'EDUCATION', categoryValue: selectedEdu.join(', '), cargo: eduCargo, points: eduPoints });
+                setSelectedEdu([]);
                 setEduCargo('TODOS');
                 setEduPoints(0);
               }}
               className="btn btn-outline"
-              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', opacity: !eduSelect ? 0.5 : 1 }}
+              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', opacity: selectedEdu.length === 0 ? 0.5 : 1 }}
             >
               <Plus size={14} className="desktop-icon-allow" /> Adicionar Regra
             </button>
@@ -675,7 +688,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {getRulesByComponent('EDUCATION').map((r) => (
               <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
+                <span>[{r.cargo || 'TODOS'}] Instrução {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
                 <button
                   type="button"
                   onClick={() => handleDeleteRule(r.id)}
@@ -691,7 +704,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
         </div>
 
         {/* 3. Patrimônio Declarado (Range) */}
-        <div className="glass-card" style={{ padding: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px', position: 'relative', zIndex: 35 }}>
           <h3 style={{ fontSize: '1.05rem', margin: '0 0 12px 0', fontWeight: 700 }}>3. Patrimônio Declarado (Faixa R$)</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
             <select
@@ -753,7 +766,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
         </div>
 
         {/* 4. Ocupação Declarada */}
-        <div className="glass-card" style={{ padding: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px', position: 'relative', zIndex: 30 }}>
           <h3 style={{ fontSize: '1.05rem', margin: '0 0 12px 0', fontWeight: 700 }}>4. Ocupação Declarada</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
             <select
@@ -765,28 +778,26 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 <option key={c} value={c}>Cargo: {c}</option>
               ))}
             </select>
-            <select
-              value={occSelect}
-              onChange={(e) => setOccSelect(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
-            >
-              <option value="">Selecione a ocupação</option>
-              {OCCUPATION_OPTIONS.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
+            <MultiSelectDropdown
+              selectedValues={selectedOcc}
+              onChange={setSelectedOcc}
+              options={OCCUPATION_OPTIONS}
+              placeholder="Selecione a ocupação..."
+              itemSingularName="ocupação"
+              itemPluralName="ocupações"
+            />
             <NumberStepControl value={occPoints} onChange={setOccPoints} />
             <button
-              disabled={!occSelect}
+              disabled={selectedOcc.length === 0}
               onClick={() => {
-                if (!occSelect) return;
-                handleAddRule({ component: 'OCCUPATION', categoryValue: occSelect, cargo: occCargo, points: occPoints });
-                setOccSelect('');
+                if (selectedOcc.length === 0) return;
+                handleAddRule({ component: 'OCCUPATION', categoryValue: selectedOcc.join(', '), cargo: occCargo, points: occPoints });
+                setSelectedOcc([]);
                 setOccCargo('TODOS');
                 setOccPoints(0);
               }}
               className="btn btn-outline"
-              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', opacity: !occSelect ? 0.5 : 1 }}
+              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', opacity: selectedOcc.length === 0 ? 0.5 : 1 }}
             >
               <Plus size={14} className="desktop-icon-allow" /> Adicionar Regra
             </button>
@@ -794,7 +805,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {getRulesByComponent('OCCUPATION').map((r) => (
               <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>[{r.cargo || 'TODOS'}] {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
+                <span>[{r.cargo || 'TODOS'}] Ocupação {r.categoryValue}: <strong>{formatPoints(r.points)}</strong></span>
                 <button
                   type="button"
                   onClick={() => handleDeleteRule(r.id)}
