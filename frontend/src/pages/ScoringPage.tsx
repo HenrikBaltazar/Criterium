@@ -227,7 +227,7 @@ const MultiPartySelect: React.FC<MultiPartySelectProps> = ({ selectedParties, on
   })();
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block', minWidth: '240px' }}>
+    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block', minWidth: '240px', zIndex: isOpen ? 1000 : 10 }}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -582,7 +582,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* 1. Partido */}
-        <div className="glass-card" style={{ padding: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px', position: 'relative', zIndex: 50 }}>
           <h3 style={{ fontSize: '1.05rem', margin: '0 0 12px 0', fontWeight: 700 }}>1. Partido Político</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
             <select

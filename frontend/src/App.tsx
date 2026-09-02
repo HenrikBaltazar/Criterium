@@ -103,8 +103,8 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Redirect guest if trying to access protected tabs directly (except during guided tutorial)
-  if (!user && !isGuidedTourOpen && (activeTab === 'settings' || activeTab === 'account' || activeTab === 'scoring')) {
+  // Redirect guest if trying to access protected account tab directly (except during guided tutorial)
+  if (!user && !isGuidedTourOpen && activeTab === 'account') {
     setActiveTab('dashboard');
   }
 
@@ -134,13 +134,13 @@ const AppContent: React.FC = () => {
             onRequireAuth={handleOpenRegister}
           />
         )}
-        {activeTab === 'settings' && (user || isGuidedTourOpen) && (
+        {activeTab === 'settings' && (
           <SettingsPage
             onRequireAuth={handleOpenRegister}
             onGoToDashboard={() => setActiveTab('dashboard')}
           />
         )}
-        {activeTab === 'scoring' && (user || isGuidedTourOpen) && (
+        {activeTab === 'scoring' && (
           <ScoringPage
             onRequireAuth={handleOpenRegister}
             onGoToDashboard={() => setActiveTab('dashboard')}
@@ -268,12 +268,8 @@ const AppContent: React.FC = () => {
 
         <button
           onClick={() => {
-            if (user) {
-              setActiveTab('scoring');
-              setSelectedCandidateId(null);
-            } else {
-              handleOpenRegister();
-            }
+            setActiveTab('scoring');
+            setSelectedCandidateId(null);
           }}
           style={{
             display: 'flex',
