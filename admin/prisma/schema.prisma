@@ -1,0 +1,262 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ElectionStatus {
+  UPCOMING
+  ACTIVE
+  PAST
+}
+
+enum CargoScope {
+  FEDERAL
+  ESTADUAL
+  MUNICIPAL
+}
+
+enum ImpactLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum EvaluationItemType {
+  PROPOSAL
+  CAREER
+  CONTROVERSY
+  GENERAL
+  AUTO_OVERRIDE
+  PARTY
+  OCCUPATION
+  EDUCATION
+  ASSETS
+  VICE
+  EXPERIENCE
+  PERFORMANCE
+  ANNOTATION
+}
+
+model User {
+  id           String           @id @default(uuid())
+  email        String           @unique
+  passwordHash String
+  name         String
+  role         Role             @default(USER)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  settings     UserSettings?
+  evaluations  UserEvaluation[]
+
+  @@map("users")
+}
+
+model ElectionYear {
+  id          String         @id @default(uuid())
+  year        Int            @unique
+  label       String
+  description String?
+  status      ElectionStatus @default(ACTIVE)
+
+  candidates  Candidate[]
+
+  @@map("election_years")
+}
+
+model Cargo {
+  id         String     @id @default(uuid())
+  code       String     @unique
+  name       String
+  scope      CargoScope
+
+  candidates Candidate[]
+
+  @@map("cargos")
+}
+
+model Candidate {
+  id                    String   @id @default(uuid())
+  sqCandidato           String?  @unique
+  electionYearId        String
+  cargoId               String
+  name                  String
+  popularName           String
+  party                 String
+  partyNumber           Int
+  candidateNumber       Int
+  state                 String
+  city                  String?
+  photoUrl              String?
+  netWorth              Float    @default(0)
+  education             String
+  occupation            String?
+  status                String   @default("DEFERIDO")
+  summary               String
+  biography             String?
+  socialLinks           String?
+  assetsJson            String?
+  vicesJson             String?
+  priorElectionsJson    String?
+  proposalsJson         String?
+  academicHistoryJson   String?
+  infoSourceUrl         String?
+  birthDate             String?
+  gender                String?
+  genderIdentity        String?
+  cpf                   String?
+  sexualOrientation     String?
+  race                  String?
+  isQuilombola          String?
+  maritalStatus         String?
+  nationality           String?
+  coalitionComposition  String?
+  spendingLimitCampaign String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  electionYear          ElectionYear     @relation(fields: [electionYearId], references: [id], onDelete: Cascade)
+  cargo                 Cargo            @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  proposals             Proposal[]
+  careerItems           CareerItem[]
+  controversies         Controversy[]
+  evaluations           UserEvaluation[]
+  publicPerformance     PublicPerformance?
+  annotations           CandidateAnnotation[]
+
+  @@index([sqCandidato])
+  @@index([cpf])
+  @@index([candidateNumber, cargoId, state])
+  @@index([state])
+  @@index([cargoId])
+  @@index([electionYearId])
+  @@map("candidates")
+}
+
+model PublicPerformance {
+  id                  String    @id @default(uuid())
+  candidateId         String    @unique
+  candidate           Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  source              String    @default("CAMARA_DOS_DEPUTADOS")
+  totalSessions       Int       @default(0)
+  attendedSessions    Int       @default(0)
+  excusedAbsences     Int       @default(0)
+  unexcusedAbsences   Int       @default(0)
+  attendanceRate      Float     @default(0.0)
+  expensesJson        String?
+  legislativeWorkJson String?
+  amendmentsJson      String?
+  sourceUrl           String?
+  updatedAt           DateTime  @updatedAt
+
+  @@map("public_performances")
+}
+
+model Proposal {
+  id          String    @id @default(uuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  category    String
+  title       String
+  description String
+  sourceUrl   String?
+  createdAt   DateTime  @default(now())
+
+  @@map("proposals")
+}
+
+model CareerItem {
+  id          String    @id @default(uuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  period      String
+  role        String
+  party       String
+  description String?
+
+  @@map("career_items")
+}
+
+model Controversy {
+  id          String      @id @default(uuid())
+  candidateId String
+  candidate   Candidate   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  title       String
+  summary     String
+  date        String?
+  impactLevel ImpactLevel @default(MEDIUM)
+  sourceUrl   String?
+
+  @@map("controversies")
+}
+
+model UserSettings {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  presetName    String   @default("CUSTOM")
+  autoRulesJson String?  @default("[]")
+
+  updatedAt     DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model UserEvaluation {
+  id          String             @id @default(uuid())
+  userId      String
+  candidateId String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidate   Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  itemType    EvaluationItemType
+  itemId      String?
+  rating      Int
+  comment     String?
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([userId, candidateId, itemType, itemId])
+  @@map("user_evaluations")
+}
+
+model CandidateAnnotation {
+  id          String    @id @default(uuid())
+  userId      String?
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String
+  eventDate   String?
+  sourceUrl   String?
+  rating      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("candidate_annotations")
+}
+
+model CrawlerStatus {
+  id                String   @id @default("default")
+  status            String
+  lastHeartbeat     DateTime @default(now())
+  candidatesFetched Int      @default(0)
+  updatedAt         DateTime @updatedAt
+
+  @@map("crawler_status")
+}
