@@ -1002,13 +1002,13 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           </div>
         </div>
 
-        {/* 6. Troca de Partido */}
+        {/* 7. Troca de Partido */}
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '1.05rem', marginBottom: '4px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <GitCommit size={18} /> Troca de Partido
+            <GitCommit size={18} /> 7. Troca de Partido
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '16px' }}>
-            Pontue candidatos de acordo com a quantidade de mudanças de partido registradas em sua trajetória política.
+            Pontue candidatos de acordo com a quantidade de mudanças de partido registradas em sua trajetória política (incluindo fidelidade partidária com 0 trocas).
           </p>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '16px' }}>
@@ -1019,6 +1019,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
                 onChange={(e) => setPartySwitchMin(e.target.value)}
                 style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600, cursor: 'pointer' }}
               >
+                <option value="0">0 trocas (Fidelidade partidária)</option>
                 <option value="1">≥ 1 troca de partido</option>
                 <option value="2">≥ 2 trocas de partido</option>
                 <option value="3">≥ 3 trocas de partido</option>
@@ -1044,14 +1045,15 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
 
             <button
               onClick={() => {
-                const minVal = parseInt(partySwitchMin, 10) || 1;
+                const parsedVal = parseInt(partySwitchMin, 10);
+                const minVal = isNaN(parsedVal) ? 0 : parsedVal;
                 handleAddRule({
                   component: 'PARTY_SWITCHES',
                   minValue: minVal,
                   cargo: partySwitchCargo,
                   points: partySwitchPoints,
                 });
-                setPartySwitchMin('1');
+                setPartySwitchMin('0');
                 setPartySwitchCargo('TODOS');
                 setPartySwitchPoints(0);
               }}
@@ -1064,8 +1066,8 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {getRulesByComponent('PARTY_SWITCHES').map((r) => {
-              const minVal = r.minValue || 1;
-              const labelText = `Troca de Partido ≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'}`;
+              const minVal = r.minValue ?? 0;
+              const labelText = minVal === 0 ? 'Fidelidade Partidária (0 trocas)' : `Troca de Partido ≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'}`;
               return (
                 <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }} title={labelText}>
                   <span>[{r.cargo || 'TODOS'}] {labelText}: <strong>{formatPoints(r.points)}</strong></span>

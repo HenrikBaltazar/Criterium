@@ -9,6 +9,7 @@ import statsRouter from './routes/stats.js';
 import usersRouter from './routes/users.js';
 import databaseRouter from './routes/database.js';
 import crawlerRouter from './routes/crawler.js';
+import candidatesRouter from './routes/candidates.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/admin/api/stats', statsRouter);
 app.use('/admin/api/users', usersRouter);
 app.use('/admin/api/database', databaseRouter);
 app.use('/admin/api/crawler', crawlerRouter);
+app.use('/admin/api/candidates', candidatesRouter);
 
 // Fallback to Admin Single Page Dashboard
 app.get('*', (req, res) => {

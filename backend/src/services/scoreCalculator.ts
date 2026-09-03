@@ -192,10 +192,18 @@ export function calculateCandidateScore(
             }
           } else if (r.component === 'PARTY_SWITCHES' || r.component === 'PARTY_SWITCH') {
             const switchesCount = calculatePartySwitchesCount(candidateData?.priorElectionsJson, candidateData?.party);
-            const minVal = r.minValue == null || r.minValue === 0 ? 1 : r.minValue;
-            if (switchesCount >= minVal && switchesCount > 0) {
-              matches = true;
-              label = `Regra Troca de Partido (≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'} - candidato tem ${switchesCount})`;
+            const minVal = r.minValue == null ? 1 : r.minValue;
+
+            if (minVal === 0) {
+              if (switchesCount === 0) {
+                matches = true;
+                label = `Regra Fidelidade Partidária (0 trocas - candidato nunca trocou de partido)`;
+              }
+            } else {
+              if (switchesCount >= minVal) {
+                matches = true;
+                label = `Regra Troca de Partido (≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'} - candidato tem ${switchesCount})`;
+              }
             }
           }
 

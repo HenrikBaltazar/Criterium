@@ -403,6 +403,65 @@
     </div>
   </div>
 
+  <!-- Edit Candidate Dedicated Modal (No bulk action) -->
+  <div id="editCandidateModal" class="modal-overlay" style="display: none;">
+    <div class="glass-card" style="width: 100%; max-width: 650px; padding: 24px; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 800;">✏️ Editar Candidato (Individual)</h3>
+        <button class="btn btn-secondary" onclick="closeCandidateEditModal()" style="padding: 4px 8px;">✕</button>
+      </div>
+      <form id="editCandidateForm" onsubmit="saveCandidateEdit(event)">
+        <input type="hidden" id="editCandId">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Nome Completo</label>
+            <input type="text" id="editCandName" required>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Apelido TSE (Nome Popular)</label>
+            <input type="text" id="editCandPopularName">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Partido</label>
+            <input type="text" id="editCandParty" required>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Estado (UF)</label>
+            <input type="text" id="editCandState" maxlength="2" required style="text-transform: uppercase;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Cargo</label>
+            <input type="text" id="editCandCargo" required>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Status da Candidatura</label>
+            <input type="text" id="editCandStatus">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Patrimônio (R$)</label>
+            <input type="number" step="0.01" id="editCandNetWorth">
+          </div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">URL da Wikipédia</label>
+          <input type="url" id="editCandWikipediaUrl" placeholder="https://pt.wikipedia.org/wiki/...">
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Resumo da Wikipédia / Biografia Customizada</label>
+          <textarea id="editCandWikipediaSummary" rows="4" placeholder="Insira ou edite o resumo de introdução do candidato..."></textarea>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeCandidateEditModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Header Bar -->
   <header>
     <div class="brand">
@@ -421,6 +480,7 @@
   <div class="app-layout">
     <aside>
       <button class="nav-btn active" onclick="switchTab('dashboard', this)">📊 Dashboard & Graficos</button>
+      <button class="nav-btn" onclick="switchTab('candidates', this)">👔 Candidatos</button>
       <button class="nav-btn" onclick="switchTab('users', this)">👥 Gestão de Usuários</button>
       <button class="nav-btn" onclick="switchTab('database', this)">🔍 Navegador do Banco</button>
       <button class="nav-btn" onclick="switchTab('sql', this)">💻 Console SQL Debugger</button>
@@ -457,6 +517,61 @@
           <div class="glass-card chart-box">
             <h3>Distribuição por Cargo Eletivo</h3>
             <canvas id="cargoChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CANDIDATES MANAGEMENT -->
+      <div id="tab-candidates" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 1.2rem; font-weight: 700;">Gestão de Candidatos Cadastrados</h2>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: 2px;">Selecione candidatos para ações em lote ou edite dados individualmente</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="candSearchInput" placeholder="Buscar por nome, apelido ou partido..." style="max-width: 260px;" onkeyup="loadCandidates(1)">
+            <input type="text" id="candStateFilter" placeholder="UF (ex: SP)" style="width: 80px; text-transform: uppercase;" onkeyup="loadCandidates(1)">
+            <input type="text" id="candPartyFilter" placeholder="Partido (ex: PL)" style="width: 100px; text-transform: uppercase;" onkeyup="loadCandidates(1)">
+          </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div class="glass-card" style="padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 3px solid var(--accent-amber);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);" id="selectedCandidatesInfo">0 candidato(s) selecionado(s)</span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">(Ações em lote)</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="bulkClearBtn" class="btn btn-secondary" disabled onclick="executeBulkClear()">
+              🧹 Limpar Selecionados (Bulk Clear)
+            </button>
+          </div>
+        </div>
+
+        <div class="data-table-container glass-card">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllCandidatesCheckbox" onchange="toggleSelectAllCandidates(this.checked)"></th>
+                <th>Candidato</th>
+                <th>Cargo</th>
+                <th>Partido / UF</th>
+                <th>Patrimônio</th>
+                <th>Wikipédia</th>
+                <th style="text-align: right;">Ação Individual</th>
+              </tr>
+            </thead>
+            <tbody id="candidatesTableBody">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Carregando candidatos...</td></tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <span id="candidatesPaginationInfo">Página 1 de 1</span>
+            <div style="display: flex; gap: 8px;">
+              <button id="candidatesPrevBtn" class="btn btn-secondary" onclick="changeCandidatesPage(-1)">Anterior</button>
+              <button id="candidatesNextBtn" class="btn btn-secondary" onclick="changeCandidatesPage(1)">Próxima</button>
+            </div>
           </div>
         </div>
       </div>
@@ -632,15 +747,203 @@
       location.reload();
     }
 
+    let currentCandidatesPage = 1;
+    let totalCandidatesPages = 1;
+    let selectedCandidateIds = new Set();
+    let loadedCandidates = [];
+
     function switchTab(tabId, btnElem) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
       document.getElementById('tab-' + tabId).classList.add('active');
       btnElem.classList.add('active');
 
+      if (tabId === 'candidates') loadCandidates(1);
       if (tabId === 'users') loadUsers(1);
       if (tabId === 'database') loadTableRows(1);
       if (tabId === 'crawler') { loadCrawlerStatus(); loadCrawlerLogs(); }
+    }
+
+    async function loadCandidates(page = 1) {
+      currentCandidatesPage = page;
+      const search = document.getElementById('candSearchInput')?.value || '';
+      const state = document.getElementById('candStateFilter')?.value || '';
+      const party = document.getElementById('candPartyFilter')?.value || '';
+
+      const url = `/admin/api/candidates?page=${page}&limit=50&search=${encodeURIComponent(search)}&state=${encodeURIComponent(state)}&party=${encodeURIComponent(party)}`;
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + adminToken } });
+      const data = await res.json();
+
+      const tbody = document.getElementById('candidatesTableBody');
+      tbody.innerHTML = '';
+      loadedCandidates = data.candidates || [];
+
+      if (loadedCandidates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhum candidato encontrado.</td></tr>';
+        document.getElementById('selectAllCandidatesCheckbox').checked = false;
+        return;
+      }
+
+      totalCandidatesPages = data.pagination.totalPages || 1;
+      document.getElementById('candidatesPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalCandidatesPages} (${data.pagination.total} candidatos cadastrados - 50/pág)`;
+
+      document.getElementById('candidatesPrevBtn').disabled = currentCandidatesPage <= 1;
+      document.getElementById('candidatesNextBtn').disabled = currentCandidatesPage >= totalCandidatesPages;
+
+      loadedCandidates.forEach(c => {
+        const isChecked = selectedCandidateIds.has(c.id);
+        const tr = document.createElement('tr');
+        const formattedNetWorth = c.netWorth ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(c.netWorth) : 'R$ 0,00';
+        const wikiBadge = c.wikipediaSummary 
+          ? '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-green);">Enriquecido</span>' 
+          : '<span class="badge" style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted);">Pendente</span>';
+
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" class="cand-checkbox" value="${c.id}" ${isChecked ? 'checked' : ''} onchange="onCandidateCheckboxChange(this)">
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${c.photoUrl ? `<img src="${c.photoUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` : '<div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;">👤</div>'}
+              <div>
+                <strong>${c.name}</strong>
+                ${c.popularName && c.popularName !== c.name ? `<div style="font-size: 0.78rem; color: var(--text-muted);">${c.popularName}</div>` : ''}
+              </div>
+            </div>
+          </td>
+          <td>${c.cargo || '--'}</td>
+          <td><strong>${c.party || '--'}</strong> / ${c.state || '--'}</td>
+          <td>${formattedNetWorth}</td>
+          <td>${wikiBadge}</td>
+          <td style="text-align: right;">
+            <button class="btn btn-secondary" onclick="openCandidateEditModal('${c.id}')">✏️ Editar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateSelectedCandidatesUI();
+    }
+
+    function onCandidateCheckboxChange(cb) {
+      if (cb.checked) {
+        selectedCandidateIds.add(cb.value);
+      } else {
+        selectedCandidateIds.delete(cb.value);
+      }
+      updateSelectedCandidatesUI();
+    }
+
+    function toggleSelectAllCandidates(checked) {
+      loadedCandidates.forEach(c => {
+        if (checked) {
+          selectedCandidateIds.add(c.id);
+        } else {
+          selectedCandidateIds.delete(c.id);
+        }
+      });
+      document.querySelectorAll('.cand-checkbox').forEach(cb => cb.checked = checked);
+      updateSelectedCandidatesUI();
+    }
+
+    function updateSelectedCandidatesUI() {
+      const count = selectedCandidateIds.size;
+      const infoElem = document.getElementById('selectedCandidatesInfo');
+      const btnElem = document.getElementById('bulkClearBtn');
+      if (infoElem) infoElem.innerText = `${count} candidato(s) selecionado(s)`;
+      if (btnElem) btnElem.disabled = count === 0;
+
+      const allCurrentSelected = loadedCandidates.length > 0 && loadedCandidates.every(c => selectedCandidateIds.has(c.id));
+      const selectAllCb = document.getElementById('selectAllCandidatesCheckbox');
+      if (selectAllCb) selectAllCb.checked = allCurrentSelected;
+    }
+
+    function changeCandidatesPage(delta) {
+      const target = currentCandidatesPage + delta;
+      if (target >= 1 && target <= totalCandidatesPages) {
+        loadCandidates(target);
+      }
+    }
+
+    async function executeBulkClear() {
+      const count = selectedCandidateIds.size;
+      if (count === 0) return;
+
+      if (!confirm(`Tem certeza que deseja LIMPAR os dados (resumos Wikipédia, biografias e anotações) dos ${count} candidatos selecionados?`)) return;
+
+      const candidateIds = Array.from(selectedCandidateIds);
+      const res = await fetch('/admin/api/candidates/bulk-clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+        body: JSON.stringify({ candidateIds })
+      });
+
+      const data = await res.json();
+      alert(data.message || data.error);
+
+      if (res.ok) {
+        selectedCandidateIds.clear();
+        loadCandidates(currentCandidatesPage);
+      }
+    }
+
+    async function openCandidateEditModal(candidateId) {
+      const res = await fetch(`/admin/api/candidates/${candidateId}`, {
+        headers: { 'Authorization': 'Bearer ' + adminToken }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Erro ao carregar dados do candidato.');
+        return;
+      }
+
+      const c = data.candidate;
+      document.getElementById('editCandId').value = c.id;
+      document.getElementById('editCandName').value = c.name || '';
+      document.getElementById('editCandPopularName').value = c.popularName || '';
+      document.getElementById('editCandParty').value = c.party || '';
+      document.getElementById('editCandState').value = c.state || '';
+      document.getElementById('editCandCargo').value = c.cargo || '';
+      document.getElementById('editCandStatus').value = c.status || '';
+      document.getElementById('editCandNetWorth').value = c.netWorth || 0;
+      document.getElementById('editCandWikipediaUrl').value = c.wikipediaUrl || '';
+      document.getElementById('editCandWikipediaSummary').value = c.wikipediaSummary || '';
+
+      document.getElementById('editCandidateModal').style.display = 'flex';
+    }
+
+    function closeCandidateEditModal() {
+      document.getElementById('editCandidateModal').style.display = 'none';
+    }
+
+    async function saveCandidateEdit(e) {
+      e.preventDefault();
+      const id = document.getElementById('editCandId').value;
+      const payload = {
+        name: document.getElementById('editCandName').value,
+        popularName: document.getElementById('editCandPopularName').value,
+        party: document.getElementById('editCandParty').value,
+        state: document.getElementById('editCandState').value,
+        cargo: document.getElementById('editCandCargo').value,
+        status: document.getElementById('editCandStatus').value,
+        netWorth: parseFloat(document.getElementById('editCandNetWorth').value) || 0,
+        wikipediaUrl: document.getElementById('editCandWikipediaUrl').value || null,
+        wikipediaSummary: document.getElementById('editCandWikipediaSummary').value || null,
+      };
+
+      const res = await fetch(`/admin/api/candidates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      alert(data.message || data.error);
+
+      if (res.ok) {
+        closeCandidateEditModal();
+        loadCandidates(currentCandidatesPage);
+      }
     }
 
     async function initDashboard() {

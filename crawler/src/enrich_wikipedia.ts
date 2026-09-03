@@ -43,6 +43,12 @@ const POLITICAL_KEYWORDS = [
   'camara', 'senado', 'assembleia', 'sindic', 'advogad', 'empresari'
 ];
 
+const FICTIONAL_KEYWORDS = [
+  'superheroi', 'superheroina', 'superherois', 'dccomics', 'marvelcomics',
+  'personagemfictici', 'personagemdeficcao', 'historiaemquadrinhos',
+  'bandadesenhada', 'desenhoanimado', 'filmedeficcao', 'quadrinhos'
+];
+
 function isLikelyPoliticalArticle(
   extract: string,
   description?: string,
@@ -59,23 +65,33 @@ function isLikelyPoliticalArticle(
 
   if (!normTitle) return false;
 
+  const lowerExtract = normalizeString(extract);
+  const lowerDesc = normalizeString(description || '');
+  const textToTest = lowerExtract + ' ' + lowerDesc;
+
+  // Reject fictional characters, comic book entities, or pop-culture superheroes
+  const containsFictional = FICTIONAL_KEYWORDS.some((kw) => textToTest.includes(kw));
+  const containsExplicitPoliticalPosition = [
+    'deputad', 'senador', 'governad', 'presidente', 'vereador', 'prefeit', 'politico brasileiro', 'politica brasileira'
+  ].some((kw) => textToTest.includes(kw));
+
+  if (containsFictional && !containsExplicitPoliticalPosition) {
+    return false;
+  }
+
   let validNameMatch = false;
 
   // 1. Check Full Official Name Match
   if (normCandidateName) {
     const candidateParts = normCandidateName
       .split(/\s+/)
-      .filter((p) => p.length > 2 && !['dos', 'das', 'com', 'sem', 'por', 'para', 'del'].includes(p));
+      .filter((p) => p.length > 2 && !['dos', 'das', 'com', 'sem', 'por', 'para', 'del', 'dos', 'da', 'do', 'de'].includes(p));
 
     if (candidateParts.length > 0) {
-      const firstName = candidateParts[0];
-      const lastName = candidateParts[candidateParts.length - 1];
+      const allCandidatePartsInTitle = candidateParts.every((part) => normTitle.includes(part));
+      const exactMatch = normCandidateName === normTitle || normTitle.includes(normCandidateName);
 
-      const titleMatchesFirstName = normTitle.includes(firstName);
-      const titleMatchesLastName = normTitle.includes(lastName);
-      const exactMatch = normCandidateName.includes(normTitle) || normTitle.includes(normCandidateName);
-
-      if (exactMatch || (titleMatchesFirstName && titleMatchesLastName)) {
+      if (exactMatch || allCandidatePartsInTitle) {
         validNameMatch = true;
       }
     }
@@ -99,12 +115,15 @@ function isLikelyPoliticalArticle(
 
   if (!validNameMatch) return false;
 
-  // 3. Political Relevance Check
-  const lowerExtract = normalizeString(extract);
-  const lowerDesc = normalizeString(description || '');
-  const textToTest = lowerExtract + ' ' + lowerDesc;
+  // 3. Brazilian Political Relevance Check
+  const hasBrazilianPoliticalContext = [
+    'politico brasileiro', 'politica brasileira', 'politicos do brasil',
+    'camara dos deputados', 'senado federal', 'partido', 'eleicao', 'eleicoes',
+    'prefeit', 'governad', 'deputad', 'senador', 'vereador', 'tse', 'camara municipal',
+    'assembleia legislativa', 'filiad'
+  ].some((kw) => textToTest.includes(kw));
 
-  return POLITICAL_KEYWORDS.some((kw) => textToTest.includes(kw));
+  return hasBrazilianPoliticalContext;
 }
 
 export async function fetchWikipediaSummaryForCandidate(
@@ -115,22 +134,28 @@ export async function fetchWikipediaSummaryForCandidate(
 ): Promise<{ summary: string; url: string } | null> {
   const searchQueries: string[] = [];
 
-  // Priority 1: Full Candidate Name
-  if (name && name.trim().length > 3) {
-    searchQueries.push(name.trim());
+  const cleanName = (name || '').trim();
+  const cleanPopular = (popularName || '').trim();
+  const cleanParty = (party || '').trim();
+
+  // Priority 1: Full Candidate Name + "politico"
+  if (cleanName.length > 3) {
+    searchQueries.push(`${cleanName} politico`);
   }
 
-  // Priority 2: TSE Popular Name / Nickname Fallback
-  if (popularName && popularName !== name && popularName.trim().length >= 3) {
-    searchQueries.push(popularName.trim());
+  // Priority 2: Full Candidate Name + "politico" + party (if party present)
+  if (cleanName.length > 3 && cleanParty) {
+    searchQueries.push(`${cleanName} politico ${cleanParty}`);
   }
 
-  // Priority 3: TSE Popular Name + "politico"
-  if (popularName && popularName.trim().length >= 3) {
-    searchQueries.push(`${popularName.trim()} politico`);
-    if (party) {
-      searchQueries.push(`${popularName.trim()} ${party}`);
-    }
+  // Priority 3: TSE Popular Name / Nickname + "politico"
+  if (cleanPopular && cleanPopular !== cleanName && cleanPopular.length >= 3) {
+    searchQueries.push(`${cleanPopular} politico`);
+  }
+
+  // Priority 4: TSE Popular Name + "politico" + party
+  if (cleanPopular && cleanParty && cleanPopular.length >= 3) {
+    searchQueries.push(`${cleanPopular} politico ${cleanParty}`);
   }
 
   for (const queryStr of searchQueries) {
