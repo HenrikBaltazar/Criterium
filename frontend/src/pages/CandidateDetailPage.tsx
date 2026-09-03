@@ -84,8 +84,11 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
       url: shareUrl,
     };
 
-    // Native PWA / System OS Share Menu (WhatsApp, Telegram, Notes, installed apps)
-    if (navigator.share) {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                     (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+
+    // Mobile / Mobile PWA: try native system OS share sheet (WhatsApp, Telegram, etc.)
+    if (isMobile && navigator.share) {
       try {
         await navigator.share(shareData);
         setIsCopied(true);
@@ -96,7 +99,7 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
       }
     }
 
-    // Fallback to direct Clipboard Copy
+    // Desktop exclusively: copy link directly to clipboard without opening system share menu
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareUrl);
