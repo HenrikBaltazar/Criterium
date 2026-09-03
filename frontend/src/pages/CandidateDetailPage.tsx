@@ -24,6 +24,7 @@ import {
   Edit3,
   Calendar,
   Link as LinkIcon,
+  Share2,
 } from 'lucide-react';
 import { FaUserAlt } from '../components/FaUserAlt';
 import { ProposalPdfChat } from '../components/ProposalPdfChat';
@@ -67,6 +68,40 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
   const [assetSearch, setAssetSearch] = useState<string>('');
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+
+  const handleShareCandidate = async () => {
+    if (!candidate) return;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?candidateId=${candidate.id}`;
+
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: `Criterium - Perfil de ${candidate.popularName || candidate.name}`,
+          text: `Confira a análise detalhada e pontuação de ${candidate.popularName || candidate.name} no Criterium!`,
+          url: shareUrl,
+        });
+        return;
+      } catch (e) {}
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2500);
+    } catch (err) {
+      console.error('Failed to copy link to clipboard:', err);
+    }
+  };
 
   // Manual Annotations State (Requires Authenticated User)
   const [annotations, setAnnotations] = useState<CandidateAnnotation[]>([]);
@@ -562,13 +597,72 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                     </a>
                   </span>
                 </p>
+
+                {/* Share Button right under Wikipedia entry */}
+                <div
+                  style={{
+                    marginTop: '12px',
+                    paddingTop: '10px',
+                    borderTop: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <button
+                    onClick={handleShareCandidate}
+                    title="Copiar link direto do candidato para a área de transferência"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: isCopied ? 'rgba(34, 197, 94, 0.18)' : 'var(--bg-secondary)',
+                      color: isCopied ? '#22c55e' : 'var(--text-main)',
+                      border: `1px solid ${isCopied ? '#22c55e' : 'var(--border-subtle)'}`,
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {isCopied ? <CheckCircle size={15} /> : <Share2 size={15} />}
+                    {isCopied ? 'Link do candidato copiado para a área de transferência!' : 'Compartilhar candidato'}
+                  </button>
+                </div>
               </div>
             ) : (
-              <QuickCandidateNoteBox
-                candidateId={candidate.id}
-                annotations={annotations}
-                onSave={() => loadDetail(true)}
-              />
+              <div style={{ marginBottom: '16px' }}>
+                <QuickCandidateNoteBox
+                  candidateId={candidate.id}
+                  annotations={annotations}
+                  onSave={() => loadDetail(true)}
+                />
+                <div style={{ marginTop: '10px' }}>
+                  <button
+                    onClick={handleShareCandidate}
+                    title="Copiar link direto do candidato para a área de transferência"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: isCopied ? 'rgba(34, 197, 94, 0.18)' : 'var(--bg-tertiary)',
+                      color: isCopied ? '#22c55e' : 'var(--text-main)',
+                      border: `1px solid ${isCopied ? '#22c55e' : 'var(--border-subtle)'}`,
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {isCopied ? <CheckCircle size={15} /> : <Share2 size={15} />}
+                    {isCopied ? 'Link do candidato copiado para a área de transferência!' : 'Compartilhar candidato'}
+                  </button>
+                </div>
+              </div>
             )}
 
             {/* Social Links */}

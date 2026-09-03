@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/Header';
@@ -21,6 +21,16 @@ const AppContent: React.FC = () => {
   const { user, setSelectedCargo, setSearchQuery } = useApp();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring'>('dashboard');
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+
+  // Check URL query parameters for direct candidate sharing link (?candidateId=xyz)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const candIdFromUrl = params.get('candidateId') || params.get('candidate');
+    if (candIdFromUrl) {
+      setSelectedCandidateId(candIdFromUrl);
+      setActiveTab('candidate');
+    }
+  }, []);
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'register' }>({
     isOpen: false,
     mode: 'login',
