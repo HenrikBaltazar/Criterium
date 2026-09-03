@@ -545,6 +545,12 @@ export async function syncPublicPerformance() {
       const dbCand = findCandidate(nomeSen, stateSen);
       if (!dbCand) continue;
 
+      const existing = await prisma.publicPerformance.findUnique({ where: { candidateId: dbCand.id } });
+      if (existing && existing.expensesJson && existing.legislativeWorkJson) {
+        // Candidate already has full Senate performance saved in DB! Skip!
+        continue;
+      }
+
       const totalSessions = 92;
       const attended = 85;
       const excused = 5;
@@ -631,6 +637,10 @@ export async function syncPublicPerformance() {
         if (!dbCand) return;
 
         const existing = await prisma.publicPerformance.findUnique({ where: { candidateId: dbCand.id } });
+        if (existing && existing.expensesJson && existing.legislativeWorkJson) {
+          // Candidate already has full Chamber performance saved in DB! Skip!
+          return;
+        }
 
         // Optimization: DB check to skip HTTP fetch if candidate already has Camara expenses in DB
         let alreadyHasCamaraData = false;

@@ -551,8 +551,20 @@
             <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);" id="selectedCandidatesInfo">0 candidato(s) selecionado(s)</span>
             <span style="font-size: 0.78rem; color: var(--text-muted);">(100 linhas por página)</span>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button id="bulkClearBtn" class="btn btn-secondary" disabled onclick="executeBulkClear()">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button id="bulkWikiBtn" class="btn btn-secondary" disabled onclick="executeBulkCrawl('wikipedia')" title="Executar crawler da Wikipédia para os selecionados">
+              🌐 Wiki (Bulk)
+            </button>
+            <button id="bulkAssetsBtn" class="btn btn-secondary" disabled onclick="executeBulkCrawl('assets')" title="Executar crawler de Bens (TSE) para os selecionados">
+              💰 Bens (Bulk)
+            </button>
+            <button id="bulkFederalBtn" class="btn btn-secondary" disabled onclick="executeBulkCrawl('federal')" title="Executar crawler da Câmara/Senado para os selecionados">
+              🏛️ Fed (Bulk)
+            </button>
+            <button id="bulkAllBtn" class="btn btn-primary" disabled onclick="executeBulkCrawl('all')" title="Executar sincronização completa para os selecionados">
+              🔄 Sync All (Bulk)
+            </button>
+            <button id="bulkClearBtn" class="btn btn-secondary" disabled onclick="executeBulkClear()" title="Limpar resumos e biografias dos selecionados">
               🧹 Limpar Selecionados (Bulk Clear)
             </button>
           </div>
@@ -992,13 +1004,51 @@
     function updateSelectedCandidatesUI() {
       const count = selectedCandidateIds.size;
       const infoElem = document.getElementById('selectedCandidatesInfo');
-      const btnElem = document.getElementById('bulkClearBtn');
       if (infoElem) infoElem.innerText = `${count} candidato(s) selecionado(s)`;
-      if (btnElem) btnElem.disabled = count === 0;
+
+      const bulkButtons = ['bulkClearBtn', 'bulkWikiBtn', 'bulkAssetsBtn', 'bulkFederalBtn', 'bulkAllBtn'];
+      bulkButtons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) btn.disabled = count === 0;
+      });
 
       const allCurrentSelected = loadedCandidates.length > 0 && loadedCandidates.every(c => selectedCandidateIds.has(c.id));
       const selectAllCb = document.getElementById('selectAllCandidatesCheckbox');
       if (selectAllCb) selectAllCb.checked = allCurrentSelected;
+    }
+
+    async function executeBulkCrawl(type) {
+      const count = selectedCandidateIds.size;
+      if (count === 0) return;
+
+      const typeLabels = {
+        wikipedia: 'Wikipédia',
+        assets: 'Bens (TSE)',
+        federal: 'Câmara/Senado',
+        all: 'Sincronização Completa'
+      };
+
+      const label = typeLabels[type] || 'Geral';
+      if (!confirm(`Executar crawler de ${label} para os ${count} candidatos selecionados em lote?`)) return;
+
+      const candidateIds = Array.from(selectedCandidateIds);
+
+      try {
+        const res = await fetch('/admin/api/candidates/bulk-crawl', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({ candidateIds, type })
+        });
+
+        const data = await res.json();
+        alert(data.message || data.error);
+
+        if (res.ok) {
+          loadCandidates(currentCandidatesPage);
+        }
+      } catch (err) {
+        alert('Erro ao executar o crawler em lote.');
+      }
     }
 
     function changeCandidatesPage(delta) {
