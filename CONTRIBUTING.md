@@ -22,6 +22,14 @@ Ao ter um Pull Request aprovado e mesclado no repositório oficial:
 
 ---
 
+## 🎨 Regra de Design System (Estrita Monocromia)
+
+- **NENHUMA COR** (verde, vermelho, azul, amarelo, etc.) é permitida no Criterium.
+- Para destaques, botões ativos, badges ou seleções, utilize **ESTRITAMENTE O PADRÃO BRANCO NO PRETO E PRETO NO BRANCO** (`var(--text-main)` / `var(--bg-primary)`).
+- Execute `cd tests && npm test` para validar o teste `UI Validation 64` (auditoria de regressão monocromática).
+
+---
+
 ## 🚀 Passos para Contribuir
 
 1. **Faça um Fork do Repositório**.

@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '../config/db';
 import { optionalAuthMiddleware, AuthenticatedRequest } from '../middlewares/auth';
 import { calculateCandidateScore } from '../services/scoreCalculator';
@@ -192,6 +192,77 @@ router.get('/:id', optionalAuthMiddleware, async (req: AuthenticatedRequest, res
   } catch (error) {
     console.error('Error fetching candidate detail:', error);
     return res.status(500).json({ error: 'Erro ao buscar detalhes do candidato.' });
+  }
+});
+
+// GET /api/candidates/:id/share - Rich Social Preview (OpenGraph for WhatsApp / Telegram)
+router.get('/:id/share', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const candidate = await prisma.candidate.findUnique({
+      where: { id },
+      include: { cargo: true },
+    });
+
+    if (!candidate) {
+      return res.status(404).send('Candidato não encontrado.');
+    }
+
+    const host = req.get('host') || 'localhost';
+    const protocol = req.protocol || 'http';
+    const appOrigin = process.env.FRONTEND_URL || `${protocol}://${host}`;
+
+    const candName = candidate.popularName || candidate.name;
+    const cargoName = candidate.cargo?.name || 'Candidato';
+    const partyState = `${candidate.party || ''}${candidate.state ? ' - ' + candidate.state : ''}`.trim();
+    const title = `${candName} (${partyState}) | Criterium`;
+    const description = `Confira a análise factual, cota parlamentar, patrimônio e histórico de ${candName} (${cargoName}) na plataforma Criterium.`;
+    const photoUrl = candidate.photoUrl || `${appOrigin}/assets/default_avatar.png`;
+    const targetUrl = `${appOrigin}/?candidateId=${candidate.id}`;
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- OpenGraph Meta Tags for WhatsApp, Telegram, Facebook, iMessage -->
+  <meta property="og:site_name" content="Criterium" />
+  <meta property="og:title" content="${candName} (${partyState})" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${photoUrl}" />
+  <meta property="og:image:width" content="600" />
+  <meta property="og:image:height" content="600" />
+  <meta property="og:url" content="${targetUrl}" />
+  <meta property="og:type" content="profile" />
+
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${candName} (${partyState})" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${photoUrl}" />
+
+  <!-- Instant Browser Redirect -->
+  <meta http-equiv="refresh" content="0;url=${targetUrl}">
+  <script>
+    window.location.replace("${targetUrl}");
+  </script>
+</head>
+<body style="background-color: #000; color: #fff; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+  <div style="text-align: center;">
+    <img src="${photoUrl}" alt="${candName}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 16px; border: 2px solid #fff;" />
+    <h2 style="margin: 0 0 8px 0;">${candName}</h2>
+    <p style="margin: 0; opacity: 0.8;">Redirecionando para o perfil no Criterium...</p>
+  </div>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(html);
+  } catch (error) {
+    console.error('Error generating candidate share preview:', error);
+    return res.status(500).send('Erro ao gerar preview de compartilhamento');
   }
 });
 

@@ -72,19 +72,31 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
 
   const handleShareCandidate = async () => {
     if (!candidate) return;
-    const shareUrl = `${window.location.origin}${window.location.pathname}?candidateId=${candidate.id}`;
 
-    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    // OpenGraph Share Preview route for WhatsApp/Telegram rich preview (Name + Photo)
+    const shareUrl = `${window.location.origin}/api/candidates/${candidate.id}/share`;
+    const candName = candidate.popularName || candidate.name;
+    const partyState = `${candidate.party || ''}${candidate.state ? ' - ' + candidate.state : ''}`.trim();
+
+    const shareData = {
+      title: `${candName} (${partyState}) | Criterium`,
+      text: `Confira a análise detalhada, cota parlamentar, patrimônio e histórico de ${candName} no Criterium!`,
+      url: shareUrl,
+    };
+
+    // Native PWA / System OS Share Menu (WhatsApp, Telegram, Notes, installed apps)
+    if (navigator.share) {
       try {
-        await navigator.share({
-          title: `Criterium - Perfil de ${candidate.popularName || candidate.name}`,
-          text: `Confira a análise detalhada e pontuação de ${candidate.popularName || candidate.name} no Criterium!`,
-          url: shareUrl,
-        });
+        await navigator.share(shareData);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2500);
         return;
-      } catch (e) {}
+      } catch (e: any) {
+        if (e && e.name === 'AbortError') return;
+      }
     }
 
+    // Fallback to direct Clipboard Copy
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareUrl);
@@ -618,9 +630,9 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                       gap: '6px',
                       padding: '6px 14px',
                       borderRadius: 'var(--radius-sm)',
-                      background: isCopied ? 'rgba(34, 197, 94, 0.18)' : 'var(--bg-secondary)',
-                      color: isCopied ? '#22c55e' : 'var(--text-main)',
-                      border: `1px solid ${isCopied ? '#22c55e' : 'var(--border-subtle)'}`,
+                      background: isCopied ? 'var(--text-main)' : 'var(--bg-secondary)',
+                      color: isCopied ? 'var(--bg-primary)' : 'var(--text-main)',
+                      border: `1px solid ${isCopied ? 'var(--text-main)' : 'var(--border-subtle)'}`,
                       fontSize: '0.82rem',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -649,9 +661,9 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                       gap: '6px',
                       padding: '6px 14px',
                       borderRadius: 'var(--radius-sm)',
-                      background: isCopied ? 'rgba(34, 197, 94, 0.18)' : 'var(--bg-tertiary)',
-                      color: isCopied ? '#22c55e' : 'var(--text-main)',
-                      border: `1px solid ${isCopied ? '#22c55e' : 'var(--border-subtle)'}`,
+                      background: isCopied ? 'var(--text-main)' : 'var(--bg-tertiary)',
+                      color: isCopied ? 'var(--bg-primary)' : 'var(--text-main)',
+                      border: `1px solid ${isCopied ? 'var(--text-main)' : 'var(--border-subtle)'}`,
                       fontSize: '0.82rem',
                       fontWeight: 600,
                       cursor: 'pointer',
