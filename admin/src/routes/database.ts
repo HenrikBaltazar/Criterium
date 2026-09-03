@@ -37,7 +37,7 @@ router.get('/table/:name', requireAdminAuth, async (req: AdminAuthRequest, res: 
   try {
     const { name } = req.params;
     const page = parseInt((req.query.page as string) || '1', 10);
-    const limit = parseInt((req.query.limit as string) || '20', 10);
+    const limit = parseInt((req.query.limit as string) || '100', 10);
     const skip = (page - 1) * limit;
 
     let rows: any[] = [];

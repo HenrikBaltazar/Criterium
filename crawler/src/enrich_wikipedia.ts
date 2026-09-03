@@ -91,7 +91,11 @@ function isLikelyPoliticalArticle(
       const allCandidatePartsInTitle = candidateParts.every((part) => normTitle.includes(part));
       const exactMatch = normCandidateName === normTitle || normTitle.includes(normCandidateName);
 
-      if (exactMatch || allCandidatePartsInTitle) {
+      const firstLastMatch = candidateParts.length >= 2 &&
+        normTitle.includes(candidateParts[0]) &&
+        normTitle.includes(candidateParts[candidateParts.length - 1]);
+
+      if (exactMatch || allCandidatePartsInTitle || firstLastMatch) {
         validNameMatch = true;
       }
     }
@@ -138,27 +142,33 @@ export async function fetchWikipediaSummaryForCandidate(
   const cleanPopular = (popularName || '').trim();
   const cleanParty = (party || '').trim();
 
-  // Priority 1: Full Candidate Name + "politico"
-  if (cleanName.length > 3) {
-    searchQueries.push(`${cleanName} politico`);
-  }
-
-  // Priority 2: Full Candidate Name + "politico" + party (if party present)
-  if (cleanName.length > 3 && cleanParty) {
-    searchQueries.push(`${cleanName} politico ${cleanParty}`);
-  }
-
-  // Priority 3: TSE Popular Name / Nickname + "politico"
-  if (cleanPopular && cleanPopular !== cleanName && cleanPopular.length >= 3) {
+  // Build robust search queries
+  if (cleanPopular && cleanPopular.length >= 3) {
     searchQueries.push(`${cleanPopular} politico`);
+    searchQueries.push(cleanPopular);
+    if (cleanParty) searchQueries.push(`${cleanPopular} politico ${cleanParty}`);
   }
 
-  // Priority 4: TSE Popular Name + "politico" + party
-  if (cleanPopular && cleanParty && cleanPopular.length >= 3) {
-    searchQueries.push(`${cleanPopular} politico ${cleanParty}`);
+  if (cleanName && cleanName !== cleanPopular) {
+    searchQueries.push(`${cleanName} politico`);
+    searchQueries.push(cleanName);
+    if (cleanParty) searchQueries.push(`${cleanName} politico ${cleanParty}`);
+
+    // If official name has > 2 words (e.g. Clariana Alves Zacarkim Barão), try First + Last Name
+    const nameParts = cleanName.split(/\s+/).filter(p => p.length > 2);
+    if (nameParts.length > 2) {
+      const firstLast = `${nameParts[0]} ${nameParts[nameParts.length - 1]}`;
+      if (firstLast !== cleanPopular && firstLast.length >= 3) {
+        searchQueries.push(`${firstLast} politico`);
+        searchQueries.push(firstLast);
+      }
+    }
   }
 
-  for (const queryStr of searchQueries) {
+  // Deduplicate search queries
+  const uniqueQueries = Array.from(new Set(searchQueries));
+
+  for (const queryStr of uniqueQueries) {
     const searchUrl = `https://pt.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(queryStr)}&utf8=&format=json`;
     const searchRes = await httpGetJson<any>(searchUrl);
 
@@ -166,8 +176,8 @@ export async function fetchWikipediaSummaryForCandidate(
       continue;
     }
 
-    // Inspect top 3 results for this query
-    const topResults = searchRes.query.search.slice(0, 3);
+    // Inspect top 5 results for this query
+    const topResults = searchRes.query.search.slice(0, 5);
     for (const topResult of topResults) {
       const summaryUrl = `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topResult.title)}`;
       const summaryRes = await httpGetJson<any>(summaryUrl);

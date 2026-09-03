@@ -10,7 +10,7 @@ router.get('/', requireAdminAuth, async (req: AdminAuthRequest, res: Response) =
   try {
     const query = (req.query.q as string) || '';
     const page = parseInt((req.query.page as string) || '1', 10);
-    const limit = parseInt((req.query.limit as string) || '20', 10);
+    const limit = parseInt((req.query.limit as string) || '100', 10);
     const skip = (page - 1) * limit;
 
     const where: any = query.trim()

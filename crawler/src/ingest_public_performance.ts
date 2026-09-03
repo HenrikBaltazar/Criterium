@@ -617,6 +617,9 @@ export async function syncPublicPerformance() {
     const deputiesArray = Array.from(deputiesMap.values());
     const BATCH_SIZE = 25;
 
+    const camaraExpensesCache = new Map<number, string>();
+    const camaraLegCache = new Map<number, string>();
+
     for (let i = 0; i < deputiesArray.length; i += BATCH_SIZE) {
       const chunk = deputiesArray.slice(i, i + BATCH_SIZE);
       await Promise.all(chunk.map(async (dep) => {
@@ -628,8 +631,41 @@ export async function syncPublicPerformance() {
         if (!dbCand) return;
 
         const existing = await prisma.publicPerformance.findUnique({ where: { candidateId: dbCand.id } });
-        const camaraExp = JSON.parse(await fetchCamaraRealExpensesJson(idCamara, nomeDep));
-        const camaraLeg = JSON.parse(await fetchCamaraLegislativeWorkJson(idCamara, nomeDep));
+
+        // Optimization: DB check to skip HTTP fetch if candidate already has Camara expenses in DB
+        let alreadyHasCamaraData = false;
+        if (existing && existing.expensesJson) {
+          try {
+            const parsed = JSON.parse(existing.expensesJson);
+            const houses = parsed.houses || [parsed];
+            if (houses.some((h: any) => h.source === 'CAMARA_DOS_DEPUTADOS' || String(h.sourceUrl).includes(String(idCamara)))) {
+              alreadyHasCamaraData = true;
+            }
+          } catch (e) {}
+        }
+
+        let camaraExpJson = camaraExpensesCache.get(idCamara);
+        if (!camaraExpJson) {
+          if (alreadyHasCamaraData && existing?.expensesJson) {
+            camaraExpJson = existing.expensesJson;
+          } else {
+            camaraExpJson = await fetchCamaraRealExpensesJson(idCamara, nomeDep);
+          }
+          camaraExpensesCache.set(idCamara, camaraExpJson);
+        }
+
+        let camaraLegJson = camaraLegCache.get(idCamara);
+        if (!camaraLegJson) {
+          if (alreadyHasCamaraData && existing?.legislativeWorkJson) {
+            camaraLegJson = existing.legislativeWorkJson;
+          } else {
+            camaraLegJson = await fetchCamaraLegislativeWorkJson(idCamara, nomeDep);
+          }
+          camaraLegCache.set(idCamara, camaraLegJson);
+        }
+
+        const camaraExp = JSON.parse(camaraExpJson);
+        const camaraLeg = JSON.parse(camaraLegJson);
 
         const totalSessions = dep.legislatura === 55 ? 96 : 88;
         const attended = dep.legislatura === 55 ? 88 : 81;

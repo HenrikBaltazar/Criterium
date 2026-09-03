@@ -454,6 +454,15 @@
           <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Resumo da Wikipédia / Biografia Customizada</label>
           <textarea id="editCandWikipediaSummary" rows="4" placeholder="Insira ou edite o resumo de introdução do candidato..."></textarea>
         </div>
+        <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">🤖 Executar Crawler Manual (Apenas para este candidato)</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" onclick="triggerCandidateCrawl(document.getElementById('editCandId').value, 'wikipedia')">🌐 Wikipédia</button>
+            <button type="button" class="btn btn-secondary" onclick="triggerCandidateCrawl(document.getElementById('editCandId').value, 'assets')">💰 Bens (TSE)</button>
+            <button type="button" class="btn btn-secondary" onclick="triggerCandidateCrawl(document.getElementById('editCandId').value, 'federal')">🏛️ Câmara/Senado</button>
+            <button type="button" class="btn btn-primary" onclick="triggerCandidateCrawl(document.getElementById('editCandId').value, 'all')">🔄 Sync Completo</button>
+          </div>
+        </div>
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
           <button type="button" class="btn btn-secondary" onclick="closeCandidateEditModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar Alterações</button>
@@ -526,12 +535,13 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
           <div>
             <h2 style="font-size: 1.2rem; font-weight: 700;">Gestão de Candidatos Cadastrados</h2>
-            <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: 2px;">Selecione candidatos para ações em lote ou edite dados individualmente</p>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: 2px;">Filtros e ordenação estilo Excel por coluna. Dispare crawlers em lote ou por candidato.</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-            <input type="text" id="candSearchInput" placeholder="Buscar por nome, apelido ou partido..." style="max-width: 260px;" onkeyup="loadCandidates(1)">
+            <input type="text" id="candSearchInput" placeholder="Buscar por nome, apelido, CPF..." style="max-width: 260px;" onkeyup="loadCandidates(1)">
             <input type="text" id="candStateFilter" placeholder="UF (ex: SP)" style="width: 80px; text-transform: uppercase;" onkeyup="loadCandidates(1)">
             <input type="text" id="candPartyFilter" placeholder="Partido (ex: PL)" style="width: 100px; text-transform: uppercase;" onkeyup="loadCandidates(1)">
+            <button class="btn btn-secondary" onclick="resetCandidatesFilters()" title="Limpar todos os filtros da tabela">🔄 Resetar Filtros</button>
           </div>
         </div>
 
@@ -539,7 +549,7 @@
         <div class="glass-card" style="padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 3px solid var(--accent-amber);">
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);" id="selectedCandidatesInfo">0 candidato(s) selecionado(s)</span>
-            <span style="font-size: 0.78rem; color: var(--text-muted);">(Ações em lote)</span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">(100 linhas por página)</span>
           </div>
           <div style="display: flex; gap: 8px;">
             <button id="bulkClearBtn" class="btn btn-secondary" disabled onclick="executeBulkClear()">
@@ -553,12 +563,64 @@
             <thead>
               <tr>
                 <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllCandidatesCheckbox" onchange="toggleSelectAllCandidates(this.checked)"></th>
-                <th>Candidato</th>
-                <th>Cargo</th>
-                <th>Partido / UF</th>
-                <th>Patrimônio</th>
-                <th>Wikipédia</th>
-                <th style="text-align: right;">Ação Individual</th>
+                <th>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span>Candidato</span>
+                    <select onchange="applyColumnSort('name', this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                      <option value="asc">A ➔ Z</option>
+                      <option value="desc">Z ➔ A</option>
+                    </select>
+                  </div>
+                </th>
+                <th>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span>Cargo</span>
+                    <select id="cargoColumnFilter" onchange="applyCargoFilter(this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                      <option value="">Todos Cargos</option>
+                      <option value="Presidente">Presidente</option>
+                      <option value="Governador">Governador</option>
+                      <option value="Senador">Senador</option>
+                      <option value="Deputado Federal">Deputado Federal</option>
+                      <option value="Deputado Estadual">Deputado Estadual</option>
+                      <option value="Prefeito">Prefeito</option>
+                      <option value="Vereador">Vereador</option>
+                    </select>
+                  </div>
+                </th>
+                <th>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span>Partido / UF</span>
+                    <select onchange="applyColumnSort('party', this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                      <option value="asc">Partido (A-Z)</option>
+                      <option value="desc">Partido (Z-A)</option>
+                    </select>
+                  </div>
+                </th>
+                <th>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span>Patrimônio</span>
+                    <select id="netWorthColumnFilter" onchange="applyNetWorthFilter(this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                      <option value="">Todos os Bens</option>
+                      <option value="zero">R$ 0,00 (Zerados)</option>
+                      <option value="gt0">Bens > R$ 0</option>
+                      <option value="gt1m">> R$ 1 Milhão</option>
+                      <option value="gt5m">> R$ 5 Milhões</option>
+                      <option value="sort_desc">Maior ➔ Menor</option>
+                      <option value="sort_asc">Menor ➔ Maior</option>
+                    </select>
+                  </div>
+                </th>
+                <th>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span>Wikipédia</span>
+                    <select id="wikiColumnFilter" onchange="applyWikiFilter(this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                      <option value="">Todos</option>
+                      <option value="enriched">Somente Enriquecidos</option>
+                      <option value="pending">Somente Pendentes</option>
+                    </select>
+                  </div>
+                </th>
+                <th style="text-align: right;">Ações de Crawler & Edição</th>
               </tr>
             </thead>
             <tbody id="candidatesTableBody">
@@ -567,7 +629,7 @@
           </table>
 
           <div class="pagination-bar">
-            <span id="candidatesPaginationInfo">Página 1 de 1</span>
+            <span id="candidatesPaginationInfo">Página 1 de 1 (100 registros por página)</span>
             <div style="display: flex; gap: 8px;">
               <button id="candidatesPrevBtn" class="btn btn-secondary" onclick="changeCandidatesPage(-1)">Anterior</button>
               <button id="candidatesNextBtn" class="btn btn-secondary" onclick="changeCandidatesPage(1)">Próxima</button>
@@ -751,6 +813,82 @@
     let totalCandidatesPages = 1;
     let selectedCandidateIds = new Set();
     let loadedCandidates = [];
+    let currentSortField = 'name';
+    let currentSortOrder = 'asc';
+    let currentFilterCargo = '';
+    let currentFilterWiki = '';
+    let currentFilterNetWorth = '';
+
+    function applyColumnSort(field, order) {
+      currentSortField = field;
+      currentSortOrder = order;
+      loadCandidates(1);
+    }
+
+    function applyCargoFilter(val) {
+      currentFilterCargo = val;
+      loadCandidates(1);
+    }
+
+    function applyWikiFilter(val) {
+      currentFilterWiki = val;
+      loadCandidates(1);
+    }
+
+    function applyNetWorthFilter(val) {
+      if (val === 'sort_desc' || val === 'sort_asc') {
+        currentSortField = 'netWorth';
+        currentSortOrder = val === 'sort_desc' ? 'desc' : 'asc';
+        currentFilterNetWorth = '';
+      } else {
+        currentFilterNetWorth = val;
+      }
+      loadCandidates(1);
+    }
+
+    function resetCandidatesFilters() {
+      if (document.getElementById('candSearchInput')) document.getElementById('candSearchInput').value = '';
+      if (document.getElementById('candStateFilter')) document.getElementById('candStateFilter').value = '';
+      if (document.getElementById('candPartyFilter')) document.getElementById('candPartyFilter').value = '';
+      if (document.getElementById('cargoColumnFilter')) document.getElementById('cargoColumnFilter').value = '';
+      if (document.getElementById('netWorthColumnFilter')) document.getElementById('netWorthColumnFilter').value = '';
+      if (document.getElementById('wikiColumnFilter')) document.getElementById('wikiColumnFilter').value = '';
+      currentSortField = 'name';
+      currentSortOrder = 'asc';
+      currentFilterCargo = '';
+      currentFilterWiki = '';
+      currentFilterNetWorth = '';
+      loadCandidates(1);
+    }
+
+    async function triggerCandidateCrawl(id, type) {
+      if (!id) return;
+      const typeMap = {
+        wikipedia: { url: `/admin/api/candidates/${id}/crawl/wikipedia`, label: 'Wikipédia' },
+        assets: { url: `/admin/api/candidates/${id}/crawl/assets`, label: 'Bens' },
+        federal: { url: `/admin/api/candidates/${id}/crawl/federal`, label: 'Câmara/Senado' },
+        all: { url: `/admin/api/candidates/${id}/crawl/all`, label: 'Sincronização Completa' }
+      };
+
+      const target = typeMap[type] || typeMap.all;
+
+      try {
+        const res = await fetch(target.url, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+        if (res.ok) {
+          loadCandidates(currentCandidatesPage);
+          if (document.getElementById('editCandidateModal').style.display === 'flex') {
+            openCandidateEditModal(id);
+          }
+        }
+      } catch (err) {
+        alert('Erro ao conectar ao serviço de crawler.');
+      }
+    }
 
     function switchTab(tabId, btnElem) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -770,7 +908,7 @@
       const state = document.getElementById('candStateFilter')?.value || '';
       const party = document.getElementById('candPartyFilter')?.value || '';
 
-      const url = `/admin/api/candidates?page=${page}&limit=50&search=${encodeURIComponent(search)}&state=${encodeURIComponent(state)}&party=${encodeURIComponent(party)}`;
+      const url = `/admin/api/candidates?page=${page}&limit=100&search=${encodeURIComponent(search)}&state=${encodeURIComponent(state)}&party=${encodeURIComponent(party)}&cargo=${encodeURIComponent(currentFilterCargo)}&wikipediaStatus=${encodeURIComponent(currentFilterWiki)}&netWorthRange=${encodeURIComponent(currentFilterNetWorth)}&sortField=${currentSortField}&sortOrder=${currentSortOrder}`;
       const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + adminToken } });
       const data = await res.json();
 
@@ -785,7 +923,7 @@
       }
 
       totalCandidatesPages = data.pagination.totalPages || 1;
-      document.getElementById('candidatesPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalCandidatesPages} (${data.pagination.total} candidatos cadastrados - 50/pág)`;
+      document.getElementById('candidatesPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalCandidatesPages} (${data.pagination.total} candidatos cadastrados - 100/pág)`;
 
       document.getElementById('candidatesPrevBtn').disabled = currentCandidatesPage <= 1;
       document.getElementById('candidatesNextBtn').disabled = currentCandidatesPage >= totalCandidatesPages;
@@ -815,8 +953,13 @@
           <td><strong>${c.party || '--'}</strong> / ${c.state || '--'}</td>
           <td>${formattedNetWorth}</td>
           <td>${wikiBadge}</td>
-          <td style="text-align: right;">
-            <button class="btn btn-secondary" onclick="openCandidateEditModal('${c.id}')">✏️ Editar</button>
+          <td style="text-align: right; white-space: nowrap;">
+            <div style="display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
+              <button class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="Crawler Wikipédia" onclick="triggerCandidateCrawl('${c.id}', 'wikipedia')">🌐 Wiki</button>
+              <button class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="Crawler Bens (TSE)" onclick="triggerCandidateCrawl('${c.id}', 'assets')">💰 Bens</button>
+              <button class="btn btn-secondary" style="padding: 4px 6px; font-size: 0.75rem;" title="Crawler Câmara/Senado" onclick="triggerCandidateCrawl('${c.id}', 'federal')">🏛️ Fed</button>
+              <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openCandidateEditModal('${c.id}')">✏️ Editar</button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1000,7 +1143,7 @@
     async function loadUsers(page = 1) {
       currentUsersPage = page;
       const q = document.getElementById('userSearch').value;
-      const res = await fetch(`/admin/api/users?q=${encodeURIComponent(q)}&page=${page}&limit=50`, {
+      const res = await fetch(`/admin/api/users?q=${encodeURIComponent(q)}&page=${page}&limit=100`, {
         headers: { 'Authorization': 'Bearer ' + adminToken }
       });
       const data = await res.json();
@@ -1013,7 +1156,7 @@
       }
 
       totalUsersPages = data.pagination.totalPages || 1;
-      document.getElementById('usersPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalUsersPages} (${data.pagination.total} usuários cadastrados - 50/pág)`;
+      document.getElementById('usersPaginationInfo').innerText = `Página ${data.pagination.page} de ${totalUsersPages} (${data.pagination.total} usuários cadastrados - 100/pág)`;
 
       document.getElementById('usersPrevBtn').disabled = currentUsersPage <= 1;
       document.getElementById('usersNextBtn').disabled = currentUsersPage >= totalUsersPages;
@@ -1057,7 +1200,7 @@
     async function loadTableRows(page = 1) {
       currentDbPage = page;
       const tableName = document.getElementById('dbTableSelect').value;
-      const res = await fetch(`/admin/api/database/table/${tableName}?page=${page}&limit=50`, {
+      const res = await fetch(`/admin/api/database/table/${tableName}?page=${page}&limit=100`, {
         headers: { 'Authorization': 'Bearer ' + adminToken }
       });
       const data = await res.json();
