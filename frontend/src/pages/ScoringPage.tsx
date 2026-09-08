@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Award, Save, RotateCcw, ArrowLeft, Plus, Minus, X, Settings, Trash2, AlertOctagon, ChevronDown, GitCommit } from 'lucide-react';
+import { Award, Save, RotateCcw, ArrowLeft, Plus, Minus, X, Settings, Trash2, AlertOctagon, ChevronDown, GitCommit, Flame } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AutoScoreRule } from '../types';
 import { deleteAllUserEvaluations } from '../services/api';
+import { HOT_TOPICS, TopicStance } from '../utils/hotTopics';
 
 interface ScoringPageProps {
   onRequireAuth?: () => void;
@@ -407,6 +408,15 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
   const [partySwitchMin, setPartySwitchMin] = useState('1');
   const [partySwitchCargo, setPartySwitchCargo] = useState('TODOS');
   const [partySwitchPoints, setPartySwitchPoints] = useState<number>(0);
+
+  const [hotTopicName, setHotTopicName] = useState<string>(HOT_TOPICS[0]);
+  const [hotTopicStance, setHotTopicStance] = useState<TopicStance>('FAVOR');
+  const [hotTopicCargo, setHotTopicCargo] = useState('TODOS');
+  const [hotTopicPoints, setHotTopicPoints] = useState<number>(0);
+
+  const [ideologyOrientation, setIdeologyOrientation] = useState<string>('<<<');
+  const [ideologyCargo, setIdeologyCargo] = useState('TODOS');
+  const [ideologyPoints, setIdeologyPoints] = useState<number>(0);
 
   const [isApplying, setIsApplying] = useState<boolean>(false);
   const [isResetRulesModalOpen, setIsResetRulesModalOpen] = useState(false);
@@ -1004,8 +1014,8 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
 
         {/* 7. Troca de Partido */}
         <div className="glass-card" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '1.05rem', marginBottom: '4px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <GitCommit size={18} /> 7. Troca de Partido
+          <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            7. Troca de Partido
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '16px' }}>
             Pontue candidatos de acordo com a quantidade de mudanças de partido registradas em sua trajetória política (incluindo fidelidade partidária com 0 trocas).
@@ -1086,7 +1096,157 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
           </div>
         </div>
 
-        {/* 7. Área de Risco: Resetar Todas as Pontuações */}
+        {/* 8. Pautas Quentes (HOT_TOPIC) */}
+        <div className="glass-card" style={{ padding: '20px', position: 'relative', zIndex: 43 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700 }}>
+              8. Pautas Quentes
+            </h3>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
+            <select
+              value={hotTopicCargo}
+              onChange={(e) => setHotTopicCargo(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
+            >
+              {CARGO_OPTIONS.map((c) => (
+                <option key={c} value={c}>Cargo: {c}</option>
+              ))}
+            </select>
+            
+            <select
+              value={hotTopicName}
+              onChange={(e) => setHotTopicName(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
+            >
+              {HOT_TOPICS.map(topic => (
+                <option key={topic} value={topic}>{topic}</option>
+              ))}
+            </select>
+            
+            <select
+              value={hotTopicStance}
+              onChange={(e) => setHotTopicStance(e.target.value as TopicStance)}
+              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
+            >
+              <option value="FAVOR">A Favor</option>
+              <option value="CONTRA">Contra</option>
+              <option value="NEUTRO">Neutro</option>
+            </select>
+
+            <NumberStepControl value={hotTopicPoints} onChange={setHotTopicPoints} />
+            <button
+              onClick={() => {
+                const val = `${hotTopicName}:${hotTopicStance}`;
+                handleAddRule({ component: 'HOT_TOPIC', categoryValue: val, cargo: hotTopicCargo, points: hotTopicPoints });
+                setHotTopicCargo('TODOS');
+                setHotTopicPoints(0);
+              }}
+              className="btn btn-outline"
+              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={14} className="desktop-icon-allow" /> Adicionar Regra
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {getRulesByComponent('HOT_TOPIC').map((r) => {
+              const labelText = r.categoryValue ? r.categoryValue.replace(':', ' = ') : '';
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>[{r.cargo || 'TODOS'}] {labelText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 9. Orientação Política (IDEOLOGY) */}
+        <div className="glass-card" style={{ padding: '20px', position: 'relative', zIndex: 42 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700 }}>
+              <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '1.1rem', marginRight: '6px' }}>&lt;&gt;</span>
+              9. Orientação Política (BLS)
+            </h3>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
+            <select
+              value={ideologyCargo}
+              onChange={(e) => setIdeologyCargo(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600 }}
+            >
+              {CARGO_OPTIONS.map((c) => (
+                <option key={c} value={c}>Cargo: {c}</option>
+              ))}
+            </select>
+            
+            <select
+              value={ideologyOrientation}
+              onChange={(e) => setIdeologyOrientation(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', color: 'var(--text-main)', fontWeight: 600, fontFamily: 'monospace' }}
+            >
+              <option value="<<<">&lt;&lt;&lt; Extrema Esquerda</option>
+              <option value="<<">&lt;&lt; Muito Esquerda</option>
+              <option value="<">&lt; Esquerda</option>
+              <option value="-">- Centro</option>
+              <option value=">">&gt; Direita</option>
+              <option value=">>">&gt;&gt; Muito Direita</option>
+              <option value=">>>">&gt;&gt;&gt; Extrema Direita</option>
+            </select>
+            
+            <NumberStepControl value={ideologyPoints} onChange={setIdeologyPoints} />
+            <button
+              onClick={() => {
+                handleAddRule({ component: 'IDEOLOGY', categoryValue: ideologyOrientation, cargo: ideologyCargo, points: ideologyPoints });
+                setIdeologyCargo('TODOS');
+                setIdeologyPoints(0);
+              }}
+              className="btn btn-outline"
+              style={{ padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={14} className="desktop-icon-allow" /> Adicionar Regra
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {getRulesByComponent('IDEOLOGY').map((r) => {
+              let labelText = r.categoryValue || '';
+              if (labelText === '<<<') labelText = '<<< Extrema Esquerda';
+              else if (labelText === '<<') labelText = '<< Muito Esquerda';
+              else if (labelText === '<') labelText = '< Esquerda';
+              else if (labelText === '-') labelText = '- Centro';
+              else if (labelText === '>') labelText = '> Direita';
+              else if (labelText === '>>') labelText = '>> Muito Direita';
+              else if (labelText === '>>>') labelText = '>>> Extrema Direita';
+
+              return (
+                <span key={r.id} className="badge badge-neutral" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>[{r.cargo || 'TODOS'}] {labelText}: <strong>{formatPoints(r.points)}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRule(r.id)}
+                    title="Remover esta regra"
+                    aria-label="Remover regra"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2px', borderRadius: '4px' }}
+                  >
+                    <X size={14} className="desktop-icon-allow" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 10. Área de Risco: Resetar Todas as Pontuações */}
         <div
           className="glass-card"
           style={{
@@ -1098,7 +1258,7 @@ export const ScoringPage: React.FC<ScoringPageProps> = ({ onRequireAuth, onGoToD
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <AlertOctagon size={20} color="var(--text-main)" className="desktop-icon-allow" />
-            <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 800 }}>Área de Risco — Zerar Pontuações Manuais</h3>
+            <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 800 }}>10. Área de Risco — Zerar Pontuações Manuais</h3>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '16px' }}>
             Esta ação apaga <strong>todas as suas pontuações manuais atribuídas a todos os candidatos</strong> na plataforma de forma definitiva.

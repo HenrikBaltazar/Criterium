@@ -25,6 +25,8 @@ import {
   Calendar,
   Link as LinkIcon,
   Share2,
+  MapPin,
+  Flame,
 } from 'lucide-react';
 import { FaUserAlt } from '../components/FaUserAlt';
 import { ProposalPdfChat } from '../components/ProposalPdfChat';
@@ -47,6 +49,9 @@ import { AttendanceChart } from '../components/AttendanceChart';
 import { getCandidateExperienceTag, isElected, buildTseCandidateUrl } from '../utils/badgeHelper';
 import { AssetEvolutionChart } from '../components/AssetEvolutionChart';
 import { PartyTimeline } from '../components/PartyTimeline';
+import { CandidateHotTopics } from '../components/CandidateHotTopics';
+import { getPartyIdeology } from '../utils/ideology';
+import { IdeologyIcon } from '../components/IdeologyIcon';
 import PublicExpensesCard from '../components/PublicExpensesCard';
 import LegislativeWorkCard from '../components/LegislativeWorkCard';
 import { QuickCandidateNoteBox } from '../components/QuickCandidateNoteBox';
@@ -58,7 +63,7 @@ interface CandidateDetailPageProps {
   onRequireAuth: () => void;
 }
 
-type TabType = 'overview' | 'bens' | 'eleicoes' | 'vices' | 'propostas' | 'desempenho' | 'anotacoes';
+type TabType = 'overview' | 'bens' | 'eleicoes' | 'vices' | 'propostas' | 'desempenho' | 'anotacoes' | 'pautas';
 
 export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candidateId, onBack, onRequireAuth }) => {
   const { selectedYear, setSearchQuery } = useApp();
@@ -516,7 +521,10 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
           {/* Candidate Title & Details */}
           <div style={{ flex: 1, minWidth: '240px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
-              <h1 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', fontWeight: 800 }}>{candidate.popularName}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {candidate.party && <IdeologyIcon party={candidate.party} />}
+                <h1 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-main)', fontWeight: 800 }}>{candidate.popularName}</h1>
+              </div>
               {expInfo.tag === 'EXPERIENTE' && (
                 <TagTooltip
                   content={expInfo.tooltip}
@@ -563,7 +571,8 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
             </div>
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              <span className="badge badge-neutral" style={{ fontWeight: 700 }}>
+              <span className="badge badge-neutral" style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                {candidate.party && <IdeologyIcon party={candidate.party} className="w-4 h-4 bg-transparent" />}
                 {candidate.party} • Nº {candidate.candidateNumber}
               </span>
 
@@ -902,6 +911,7 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
             { id: 'eleicoes', label: `Eleições Anteriores (${priorElections.length})`, icon: History },
             { id: 'vices', label: `Vices & Suplentes (${vices.length})`, icon: Users },
             { id: 'propostas', label: `Plano de Governo (${proposalFiles.length})`, icon: FileText },
+            { id: 'pautas', label: 'Pautas Quentes', icon: Flame },
             { id: 'anotacoes', label: `Anotações (${annotations.length})`, icon: Bookmark },
           ];
 
@@ -1039,6 +1049,22 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
                   <SourceTooltip sourceUrl={candidate.infoSourceUrl} label="Origem Oficial: TSE DivulgaCandContas" />
                 </div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>{candidate.state}</div>
+              </div>
+
+              {/* Naturalidade (Cidade e Estado de Nascimento) */}
+              <div style={{ background: 'var(--bg-tertiary)', padding: '14px', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span>Naturalidade</span>
+                  <SourceTooltip sourceUrl={candidate.infoSourceUrl} label="Origem Oficial: TSE DivulgaCandContas (Município e UF de Nascimento)" />
+                </div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={15} style={{ opacity: 0.8 }} />
+                  <span>
+                    {candidate.birthCity && candidate.birthState 
+                      ? `${candidate.birthCity} - ${candidate.birthState}` 
+                      : (candidate.birthCity || candidate.birthState || 'Não informada')}
+                  </span>
+                </div>
               </div>
 
               {/* Data de Nascimento */}
@@ -2233,6 +2259,20 @@ export const CandidateDetailPage: React.FC<CandidateDetailPageProps> = ({ candid
       )}
 
       {/* Aba de Anotações Manuais do Usuário */}
+      {activeTab === 'pautas' && (
+        <div className="bg-white border-x border-b border-gray-200 p-6 md:p-8 rounded-b-lg">
+          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <Flame className="w-6 h-6 text-gray-700" />
+            Pautas Quentes
+          </h3>
+          <CandidateHotTopics 
+            candidate={candidate} 
+            onRequireAuth={onRequireAuth} 
+            onRatingChanged={() => loadDetail(true)} 
+          />
+        </div>
+      )}
+
       {activeTab === 'anotacoes' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Header / Banner de Anotações */}

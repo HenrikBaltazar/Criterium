@@ -104,17 +104,41 @@ export const WelcomeTutorialModal: React.FC<WelcomeTutorialModalProps> = ({
           </span>
         </div>
 
-        {/* Description */}
         <p
           style={{
             fontSize: '0.9rem',
             color: 'var(--text-muted)',
             lineHeight: 1.6,
-            marginBottom: '24px',
+            marginBottom: '16px',
           }}
         >
           Seja bem-vindo ao <strong>Criterium</strong>! Esta não é uma ferramenta de pesquisa tradicional, mas sim uma plataforma de pontuação pessoal onde você avalia candidatos com base em dados oficiais do TSE, Câmara e Senado e define sua própria régua de avaliação para formar o seu ranking de voto.
         </p>
+
+        <div
+          style={{
+            fontSize: '0.85rem',
+            color: 'var(--text-muted)',
+            lineHeight: 1.5,
+            marginBottom: '24px',
+            background: 'var(--bg-tertiary)',
+            padding: '12px',
+            borderRadius: '8px',
+            border: '1px solid var(--border-subtle)',
+            textAlign: 'left'
+          }}
+        >
+          <strong>Dica de Navegação:</strong> Ao lado do nome dos candidatos e partidos, você verá um pequeno ícone indicando sua posição ideológica segundo o <a href="https://dataverse.harvard.edu/dataverse/bls" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}><em>Brazilian Legislative Surveys (BLS)</em></a>:
+          <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <li><strong>&lt;&lt;&lt;</strong> Extrema Esquerda</li>
+            <li><strong>&lt;&lt;</strong> Muito Esquerda</li>
+            <li><strong>&lt;</strong> Esquerda</li>
+            <li><strong>-</strong> Centro</li>
+            <li><strong>&gt;</strong> Direita</li>
+            <li><strong>&gt;&gt;</strong> Muito Direita</li>
+            <li><strong>&gt;&gt;&gt;</strong> Extrema Direita</li>
+          </ul>
+        </div>
 
         {/* Action Buttons */}
         <div

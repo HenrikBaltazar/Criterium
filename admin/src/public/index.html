@@ -610,6 +610,15 @@
                 </th>
                 <th>
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span>Naturalidade</span>
+                    <select onchange="applyColumnSort('birthCity', this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
+                      <option value="asc">Cidade (A-Z)</option>
+                      <option value="desc">Cidade (Z-A)</option>
+                    </select>
+                  </div>
+                </th>
+                <th>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                     <span>Patrimônio</span>
                     <select id="netWorthColumnFilter" onchange="applyNetWorthFilter(this.value)" style="padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-subtle);">
                       <option value="">Todos os Bens</option>
@@ -636,7 +645,7 @@
               </tr>
             </thead>
             <tbody id="candidatesTableBody">
-              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Carregando candidatos...</td></tr>
+              <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Carregando candidatos...</td></tr>
             </tbody>
           </table>
 
@@ -929,7 +938,7 @@
       loadedCandidates = data.candidates || [];
 
       if (loadedCandidates.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Nenhum candidato encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Nenhum candidato encontrado.</td></tr>';
         document.getElementById('selectAllCandidatesCheckbox').checked = false;
         return;
       }
@@ -947,6 +956,7 @@
         const wikiBadge = c.wikipediaSummary 
           ? '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-green);">Enriquecido</span>' 
           : '<span class="badge" style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted);">Pendente</span>';
+        const naturalidadeStr = c.birthCity && c.birthState ? `${c.birthCity} - ${c.birthState}` : (c.birthCity || c.birthState || '--');
 
         tr.innerHTML = `
           <td style="text-align: center;">
@@ -963,6 +973,7 @@
           </td>
           <td>${c.cargo || '--'}</td>
           <td><strong>${c.party || '--'}</strong> / ${c.state || '--'}</td>
+          <td>${naturalidadeStr}</td>
           <td>${formattedNetWorth}</td>
           <td>${wikiBadge}</td>
           <td style="text-align: right; white-space: nowrap;">

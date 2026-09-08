@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Search, Lock, Sliders, Award, User as UserIcon, LogOut, ChevronDown, X } from 'lucide-react';
+import { Download, Search, Lock, Sliders, Award, User as UserIcon, LogOut, ChevronDown, X, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface HeaderProps {
-  activeTab: 'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring';
-  setActiveTab: (tab: 'dashboard' | 'settings' | 'account' | 'scoring') => void;
+  activeTab: 'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring' | 'info';
+  setActiveTab: (tab: 'dashboard' | 'settings' | 'account' | 'scoring' | 'info') => void;
   onOpenAuth: () => void;
   onOpenRegister?: () => void;
   onToggleSidebar?: () => void;
@@ -73,6 +73,23 @@ export const Header: React.FC<HeaderProps> = ({
               criterium
             </h1>
           </div>
+          <button
+            className="hide-mobile"
+            onClick={() => setActiveTab('info')}
+            title="Informações"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: activeTab === 'info' ? 'var(--text-main)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px'
+            }}
+          >
+            <Info size={20} className="desktop-icon-allow" />
+          </button>
         </div>
 
         {/* Desktop Search Bar (Hidden on Mobile) */}

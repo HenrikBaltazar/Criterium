@@ -11,6 +11,7 @@ import evaluationRoutes from './routes/evaluations.routes';
 import rankingRoutes from './routes/rankings.routes';
 import crawlerRoutes from './routes/crawler.routes';
 import annotationRoutes from './routes/annotations.routes';
+import { macroRoutes } from './routes/macro.routes';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -60,9 +61,13 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/rankings', rankingRoutes);
 app.use('/api/crawler', crawlerRoutes);
 app.use('/api/annotations', annotationRoutes);
+app.use('/api/macro', macroRoutes);
+
+import { startBlsCronjob } from './services/blsCrawler';
 
 app.listen(PORT, () => {
   console.log(`🚀 Criterium Backend Server rodando na porta ${PORT}`);
+  startBlsCronjob();
 });
 
 export default app;

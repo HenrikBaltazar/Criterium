@@ -215,8 +215,9 @@ router.get('/:id/share', async (req: Request, res: Response) => {
     const candName = candidate.popularName || candidate.name;
     const cargoName = candidate.cargo?.name || 'Candidato';
     const partyState = `${candidate.party || ''}${candidate.state ? ' - ' + candidate.state : ''}`.trim();
+    const naturalidadeText = candidate.birthCity && candidate.birthState ? ` | Natural de ${candidate.birthCity} - ${candidate.birthState}` : '';
     const title = `${candName} (${partyState}) | Criterium`;
-    const description = `Confira a análise factual, cota parlamentar, patrimônio e histórico de ${candName} (${cargoName}) na plataforma Criterium.`;
+    const description = `Confira a análise factual, cota parlamentar, patrimônio e histórico de ${candName} (${cargoName}${naturalidadeText}) na plataforma Criterium.`;
     const photoUrl = candidate.photoUrl || `${appOrigin}/assets/default_avatar.png`;
     const targetUrl = `${appOrigin}/?candidateId=${candidate.id}`;
 

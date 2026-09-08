@@ -53,6 +53,8 @@ export async function startRollingSyncEngine(targetDays = 7) {
             const updatedEducation = detail.grauInstrucao || cand.education;
             const updatedOccupation = detail.ocupacao || cand.occupation;
             const updatedStatus = detail.descricaoSituacao || cand.status;
+            const updatedBirthCity = detail.nomeMunicipioNascimento || detail.municipioNascimento || cand.birthCity;
+            const updatedBirthState = detail.sgUfNascimento || detail.ufNascimento || cand.birthState;
 
             let wikiUpdateData: any = {};
             if (!cand.wikipediaSummary) {
@@ -74,11 +76,13 @@ export async function startRollingSyncEngine(targetDays = 7) {
                 education: updatedEducation,
                 occupation: updatedOccupation,
                 status: updatedStatus,
+                birthCity: updatedBirthCity,
+                birthState: updatedBirthState,
                 ...wikiUpdateData,
                 updatedAt: new Date()
               }
             });
-            console.log(`   ✅ [TSE Re-verificado] Status: ${updatedStatus} | Bens: R$ ${updatedNetWorth.toLocaleString('pt-BR')}`);
+            console.log(`   ✅ [TSE Re-verificado] Status: ${updatedStatus} | Bens: R$ ${updatedNetWorth.toLocaleString('pt-BR')} | Naturalidade: ${updatedBirthCity || 'N/I'} - ${updatedBirthState || 'N/I'}`);
           } else {
             await prisma.candidate.update({
               where: { id: cand.id },

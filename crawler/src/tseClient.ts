@@ -14,6 +14,8 @@ export interface TSERawCandidate {
   fotoUrl?: string;
   gastoCampanhaMax?: number;
   stReg: string;
+  birthCity?: string;
+  birthState?: string;
   infoSourceUrl: string;
 }
 

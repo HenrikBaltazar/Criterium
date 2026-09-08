@@ -116,6 +116,8 @@ model Candidate {
   wikipediaChecked      Boolean  @default(false) // Flag indicating if Wikipedia search was performed
   infoSourceUrl         String?  // TSE official declaration source URL
   birthDate             String?
+  birthCity             String?
+  birthState            String?
   gender                String?
   genderIdentity        String?
   cpf                   String?
@@ -264,4 +266,13 @@ model CrawlerStatus {
   updatedAt         DateTime @updatedAt
 
   @@map("crawler_status")
+}
+
+model MacroIndicator {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("macro_indicators")
 }

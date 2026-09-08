@@ -93,7 +93,7 @@ export interface PublicPerformance {
 export interface UserEvaluation {
   id?: string;
   candidateId: string;
-  itemType: 'PROPOSAL' | 'CAREER' | 'CONTROVERSY' | 'GENERAL' | 'AUTO_OVERRIDE' | 'PARTY' | 'OCCUPATION' | 'EDUCATION' | 'ASSETS' | 'VICE' | 'EXPERIENCE' | 'PERFORMANCE' | 'ANNOTATION' | 'PARTY_SWITCH';
+  itemType: 'PROPOSAL' | 'CAREER' | 'CONTROVERSY' | 'GENERAL' | 'AUTO_OVERRIDE' | 'PARTY' | 'OCCUPATION' | 'EDUCATION' | 'ASSETS' | 'VICE' | 'EXPERIENCE' | 'PERFORMANCE' | 'ANNOTATION' | 'PARTY_SWITCH' | 'HOT_TOPIC';
   itemId?: string;
   rating: number; // Scale from -5 to +5
   comment?: string;
@@ -142,6 +142,8 @@ export interface Candidate {
   wikipediaUrl?: string;
   infoSourceUrl?: string;
   birthDate?: string;
+  birthCity?: string;
+  birthState?: string;
   gender?: string;
   genderIdentity?: string;
   cpf?: string;
@@ -168,7 +170,7 @@ export interface Candidate {
 
 export interface AutoScoreRule {
   id: string;
-  component: 'PARTY' | 'EDUCATION' | 'ASSETS' | 'OCCUPATION' | 'EXPERIENCE' | 'PERFORMANCE' | 'PARTY_SWITCHES';
+  component: 'PARTY' | 'EDUCATION' | 'ASSETS' | 'OCCUPATION' | 'EXPERIENCE' | 'PERFORMANCE' | 'PARTY_SWITCHES' | 'HOT_TOPIC' | 'IDEOLOGY';
   categoryValue?: string;
   minValue?: number;
   maxValue?: number;

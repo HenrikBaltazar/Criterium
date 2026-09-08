@@ -5,6 +5,7 @@ import { SourceTooltip } from './SourceTooltip';
 import { TagTooltip } from './TagTooltip';
 import { RatingControl } from './RatingControl';
 import { FaUserAlt } from './FaUserAlt';
+import { IdeologyIcon } from './IdeologyIcon';
 import { getJudicialBadgeStatus, formatTseStatus, shouldRenderTseStatusBadge, getCandidateExperienceTag } from '../utils/badgeHelper';
 
 interface CandidateCardProps {
@@ -203,7 +204,8 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, rank, o
               {candidate.popularName}
             </h3>
             {/* Party, Candidate Number, and State if State scope */}
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              {candidate.party && <IdeologyIcon party={candidate.party} />}
               {partyAndNumber}
             </div>
           </div>

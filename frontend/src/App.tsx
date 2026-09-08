@@ -7,20 +7,22 @@ import { CandidateDetailPage } from './pages/CandidateDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AccountPage } from './pages/AccountPage';
 import { ScoringPage } from './pages/ScoringPage';
+import { InformationPage } from './pages/InformationPage';
 import { AuthModal } from './components/AuthModal';
 import { RankingSidebar } from './components/RankingSidebar';
 import { MobileSearchModal } from './components/MobileSearchModal';
 import { PwaInstallModal } from './components/PwaInstallModal';
 import { WelcomeTutorialModal } from './components/WelcomeTutorialModal';
 import { GuidedTutorialTour } from './components/GuidedTutorialTour';
-import { LayoutDashboard, Trophy, Sliders, User as UserIcon, Award } from 'lucide-react';
+import { LayoutDashboard, Trophy, Sliders, User as UserIcon, Award, Info, LogOut } from 'lucide-react';
 
 import { fetchRankings } from './services/api';
 
 const AppContent: React.FC = () => {
-  const { user, setSelectedCargo, setSearchQuery } = useApp();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring'>('dashboard');
+  const { user, setSelectedCargo, setSearchQuery, logout } = useApp();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'candidate' | 'account' | 'scoring' | 'info'>('dashboard');
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Check URL query parameters for direct candidate sharing link (?candidateId=xyz)
   useEffect(() => {
@@ -172,6 +174,9 @@ const AppContent: React.FC = () => {
             onRequireAuth={handleOpenRegister}
           />
         )}
+        {activeTab === 'info' && (
+          <InformationPage />
+        )}
       </main>
 
       {/* First-Time Welcome Modal & Interactive Guided Tutorial Tour */}
@@ -297,44 +302,159 @@ const AppContent: React.FC = () => {
           <span>Pontuação</span>
         </button>
 
-        {/* Configurações: Only visible on mobile if logged in */}
-        {user && (
-          <button
-            onClick={() => setActiveTab('settings')}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2px',
-              fontSize: '0.68rem',
-              color: activeTab === 'settings' ? 'var(--text-main)' : 'var(--text-muted)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <Sliders size={18} />
-            <span>Config</span>
-          </button>
-        )}
-
         <button
-          onClick={() => (user ? setActiveTab('account') : handleOpenLogin())}
+          onClick={() => {
+            setActiveTab('info');
+            setSelectedCandidateId(null);
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             gap: '2px',
             fontSize: '0.68rem',
-            color: activeTab === 'account' ? 'var(--text-main)' : 'var(--text-muted)',
+            color: activeTab === 'info' ? 'var(--text-main)' : 'var(--text-muted)',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
           }}
         >
-          <UserIcon size={18} />
-          <span>{user ? user.name.split(' ')[0] : 'Entrar'}</span>
+          <Info size={18} />
+          <span>Info</span>
         </button>
+
+        {/* Configurações & Conta (Dropup) */}
+        <div style={{ position: 'relative' }}>
+          {isMobileMenuOpen && (
+            <>
+              {/* Overlay invisível para fechar ao clicar fora */}
+              <div 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0, left: 0, right: 0, bottom: '56px',
+                  zIndex: 90
+                }}
+              />
+              
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  right: '50%',
+                  transform: 'translateX(50%)',
+                  marginBottom: '8px',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-lg)',
+                  padding: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  zIndex: 100,
+                  minWidth: '140px'
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (user) setActiveTab('account');
+                    else handleOpenLogin();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    color: activeTab === 'account' ? 'var(--text-main)' : 'var(--text-muted)',
+                    textAlign: 'left',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    width: '100%'
+                  }}
+                >
+                  <UserIcon size={16} /> Meu Perfil
+                </button>
+
+                {user && (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setActiveTab('settings');
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: activeTab === 'settings' ? 'var(--text-main)' : 'var(--text-muted)',
+                      textAlign: 'left',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      width: '100%'
+                    }}
+                  >
+                    <Sliders size={16} /> Configurações
+                  </button>
+                )}
+
+                {user && (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      logout();
+                      setActiveTab('dashboard');
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      textAlign: 'left',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      width: '100%'
+                    }}
+                  >
+                    <LogOut size={16} /> Sair
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              if (user) {
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+              } else {
+                handleOpenLogin();
+              }
+            }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2px',
+              fontSize: '0.68rem',
+              color: (activeTab === 'account' || activeTab === 'settings') ? 'var(--text-main)' : 'var(--text-muted)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <UserIcon size={18} />
+            <span>{user ? user.name.split(' ')[0] : 'Entrar'}</span>
+          </button>
+        </div>
       </nav>
 
       {/* Simplified Clean Footer */}

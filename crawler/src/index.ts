@@ -5,6 +5,7 @@ import { syncPublicPerformance } from './ingest_public_performance';
 import { syncSenateEducation } from './ingest_senate_education';
 import { syncWikipediaSummaries } from './enrich_wikipedia';
 import { startRollingSyncEngine } from './rollingSyncEngine';
+import { ingestMacroIndicators } from './ingest_macro_indicators';
 
 const prisma = new PrismaClient();
 
@@ -85,6 +86,10 @@ interface TseCandidateDetail {
   sites?: string[];
   eleicoesAnteriores?: any[];
   arquivos?: any[];
+  nomeMunicipioNascimento?: string;
+  sgUfNascimento?: string;
+  municipioNascimento?: string;
+  ufNascimento?: string;
   ufCandidatura: string;
   partido?: { numero: number; sigla: string; nome: string };
 }
@@ -178,6 +183,9 @@ async function processCandidateItem(
   const infoSourceUrl = `https://divulgacandcontas.tse.jus.br/divulga/#/candidato/${uf}/${uf}/20322002026/${sqCandidato}/2026/${uf}`;
   const summary = `Candidato a ${cfg.name} nas Eleições 2026 (${uf}) pelo partido ${party}.`;
 
+  const birthCity = detail?.nomeMunicipioNascimento || detail?.municipioNascimento || null;
+  const birthState = detail?.sgUfNascimento || detail?.ufNascimento || null;
+
   // Search first by sqCandidato, then fallback by CPF + cargoId + state
   if (!existing) {
     existing = await prisma.candidate.findUnique({
@@ -207,13 +215,15 @@ async function processCandidateItem(
     if (!existing.priorElectionsJson && priorElectionsJson) updateData.priorElectionsJson = priorElectionsJson;
     if (!existing.proposalsJson && proposalsJson) updateData.proposalsJson = proposalsJson;
     if (!existing.infoSourceUrl && infoSourceUrl) updateData.infoSourceUrl = infoSourceUrl;
+    if (!existing.birthCity && birthCity) updateData.birthCity = birthCity;
+    if (!existing.birthState && birthState) updateData.birthState = birthState;
 
     if (Object.keys(updateData).length > 0) {
       await prisma.candidate.update({
         where: { id: existing.id },
         data: updateData,
       });
-      console.log(`  └─ [PostgreSQL] ATUALIZADO: ${popularName} (${party} - ${uf}) | Enriquecidos novos campos do TSE.`);
+      console.log(`  └─ [PostgreSQL] ATUALIZADO: ${popularName} (${party} - ${uf}) | Enriquecidos novos campos do TSE (Naturalidade: ${birthCity || 'N/I'} - ${birthState || 'N/I'}).`);
       return 'updated';
     }
     return 'skipped';
@@ -243,9 +253,11 @@ async function processCandidateItem(
           priorElectionsJson,
           proposalsJson,
           infoSourceUrl,
+          birthCity,
+          birthState,
         },
       });
-      console.log(`  ✨ [PostgreSQL] CRIADO: ${popularName} (${fullName}) | Partido: ${party} (${partyNumber}) | Bens: R$ ${netWorth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Vices: ${detail?.vices?.length || 0} | Eleições Anteriores: ${sanitizedEleicoes.length}`);
+      console.log(`  ✨ [PostgreSQL] CRIADO: ${popularName} (${fullName}) | Partido: ${party} (${partyNumber}) | Naturalidade: ${birthCity || 'N/I'} - ${birthState || 'N/I'}`);
       return 'saved';
     } catch (err: any) {
       console.warn(`  ⚠️ [Crawler Error] Falha ao salvar candidato ${sqCandidato} (${fullName}):`, err.message);
@@ -356,6 +368,7 @@ async function main() {
 
   // 8. Fase 7: Iniciar Motor de Re-verificação Contínua Lenta (Ciclo de 7 dias ininterruptos)
   console.log('🔄 [Fase 7 - Re-verificação Contínua] Ativando motor de sincronização ritmada (Ciclo de 7 dias)...');
+  await ingestMacroIndicators();
   await startRollingSyncEngine(7);
 }
 

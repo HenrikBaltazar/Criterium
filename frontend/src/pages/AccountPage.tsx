@@ -728,74 +728,147 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                           </div>
                         )}
 
-                        {selection.status === 'TIE' && selection.candidates && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div
-                              style={{
-                                fontSize: '0.75rem',
-                                color: 'var(--text-main)',
-                                background: 'var(--bg-tertiary)',
-                                border: '1px solid var(--border-subtle)',
-                                padding: '6px 10px',
-                                borderRadius: 'var(--radius-sm)',
-                                fontWeight: 700,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                              }}
-                            >
-                              <AlertTriangle size={14} />
-                              <span>Empate técnico entre {selection.candidates.length} candidatos ({selection.maxScore} pts). Escolha um:</span>
-                            </div>
+                        {selection.status === 'TIE' && selection.candidates && (() => {
+                          const chosenCand = selection.candidates.find(c => selectedSeatCandidates[seat.id] === c.id) || selection.candidates[0];
 
-                            {selection.candidates.map((cand) => {
-                              const isChosen =
-                                selectedSeatCandidates[seat.id] === cand.id ||
-                                (!selectedSeatCandidates[seat.id] && cand.id === selection.candidates![0].id);
-
-                              return (
+                          return (
+                            <>
+                              <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <div
-                                  key={cand.id}
-                                  onClick={() => handleSelectTieCandidate(seat.id, cand.id)}
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-main)',
+                                    background: 'var(--bg-tertiary)',
+                                    border: '1px solid var(--border-subtle)',
+                                    padding: '6px 10px',
+                                    borderRadius: 'var(--radius-sm)',
+                                    fontWeight: 700,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                  }}
+                                >
+                                  <AlertTriangle size={14} />
+                                  <span>Empate técnico entre {selection.candidates.length} candidatos ({selection.maxScore} pts). Escolha um:</span>
+                                </div>
+
+                                {selection.candidates.map((cand) => {
+                                  const isChosen = chosenCand.id === cand.id;
+
+                                  return (
+                                    <div
+                                      key={cand.id}
+                                      onClick={() => handleSelectTieCandidate(seat.id, cand.id)}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '10px 12px',
+                                        borderRadius: 'var(--radius-sm)',
+                                        background: isChosen ? 'var(--bg-tertiary)' : 'var(--bg-primary)',
+                                        border: isChosen ? '2px solid var(--text-main)' : '1px solid var(--border-subtle)',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div
+                                          style={{
+                                            width: '18px',
+                                            height: '18px',
+                                            borderRadius: '50%',
+                                            border: isChosen ? '5px solid var(--text-main)' : '2px solid var(--border-strong)',
+                                            background: 'var(--bg-primary)',
+                                          }}
+                                        />
+                                        <div>
+                                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>
+                                            {cand.popularName}
+                                          </div>
+                                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            {cand.party} • {cand.state}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                        {getCandidateDisplayNumber(cand, seat.digitCount)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* PRINT-ONLY BLOCK: shows the chosen candidate as if it was a SINGLE selection */}
+                              <div className="print-only" style={{ display: 'none' }}>
+                                <div
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    padding: '10px 12px',
+                                    gap: '12px',
+                                    padding: '12px',
+                                    background: 'var(--bg-tertiary)',
                                     borderRadius: 'var(--radius-sm)',
-                                    background: isChosen ? 'var(--bg-tertiary)' : 'var(--bg-primary)',
-                                    border: isChosen ? '2px solid var(--text-main)' : '1px solid var(--border-subtle)',
-                                    cursor: 'pointer',
                                   }}
                                 >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <div
                                       style={{
-                                        width: '18px',
-                                        height: '18px',
+                                        width: '44px',
+                                        height: '44px',
                                         borderRadius: '50%',
-                                        border: isChosen ? '5px solid var(--text-main)' : '2px solid var(--border-strong)',
-                                        background: 'var(--bg-primary)',
+                                        background: 'var(--border-subtle)',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
                                       }}
-                                    />
+                                    >
+                                      {chosenCand.photoUrl ? (
+                                        <img
+                                          src={chosenCand.photoUrl}
+                                          alt={chosenCand.popularName}
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                      ) : (
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                                          {chosenCand.popularName.charAt(0)}
+                                        </span>
+                                      )}
+                                    </div>
                                     <div>
-                                      <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>
-                                        {cand.popularName}
+                                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                                        {chosenCand.popularName}
                                       </div>
-                                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                        {cand.party} • {cand.state}
+                                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                        {chosenCand.party} • {chosenCand.state}
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                                    {getCandidateDisplayNumber(cand, seat.digitCount)}
+                                  <div
+                                    style={{
+                                      textAlign: 'right',
+                                      background: 'var(--bg-primary)',
+                                      border: '2px solid var(--text-main)',
+                                      padding: '6px 12px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                                      Número
+                                    </div>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-main)' }}>
+                                      {getCandidateDisplayNumber(chosenCand, seat.digitCount)}
+                                    </div>
                                   </div>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   );

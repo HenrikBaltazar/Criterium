@@ -1,4 +1,5 @@
 import { UserSettings, UserEvaluation, CareerItem } from '@prisma/client';
+import { getPartyStance, HotTopic, getPartyIdeologyScore } from '../data/hotTopics';
 
 export type ExperienceTag = 'OUTSIDER' | 'EXPERIENTE' | 'INTERMEDIATE';
 
@@ -203,6 +204,34 @@ export function calculateCandidateScore(
               if (switchesCount >= minVal) {
                 matches = true;
                 label = `Regra Troca de Partido (≥ ${minVal} ${minVal === 1 ? 'troca' : 'trocas'} - candidato tem ${switchesCount})`;
+              }
+            }
+          } else if (r.component === 'HOT_TOPIC' && candidateData?.party && r.categoryValue) {
+            const [topic, expectedStance] = r.categoryValue.split(':');
+            if (topic && expectedStance) {
+              const actualStance = getPartyStance(candidateData.party, topic as HotTopic);
+              if (actualStance === expectedStance) {
+                matches = true;
+                label = `Regra Pauta Quente (${topic}: ${expectedStance})`;
+              }
+            }
+          } else if (r.component === 'IDEOLOGY' && candidateData?.party && r.categoryValue) {
+            const score = getPartyIdeologyScore(candidateData.party);
+            if (score !== null) {
+              let textSymbol = '-';
+              let orientationLabel = 'Centro';
+              if (score < 2.0) { textSymbol = '<<<'; orientationLabel = 'Extrema Esquerda'; }
+              else if (score < 3.0) { textSymbol = '<<'; orientationLabel = 'Muito Esquerda'; }
+              else if (score <= 4.5) { textSymbol = '<'; orientationLabel = 'Esquerda'; }
+              else if (score < 6.5) { textSymbol = '-'; orientationLabel = 'Centro'; }
+              else if (score < 7.5) { textSymbol = '>'; orientationLabel = 'Direita'; }
+              else if (score < 8.5) { textSymbol = '>>'; orientationLabel = 'Muito Direita'; }
+              else { textSymbol = '>>>'; orientationLabel = 'Extrema Direita'; }
+              
+              // We compare based on the textSymbol which we will store in categoryValue
+              if (r.categoryValue === textSymbol) {
+                matches = true;
+                label = `Regra Orientação Política (${orientationLabel})`;
               }
             }
           }

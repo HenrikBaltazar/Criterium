@@ -43,4 +43,22 @@ router.get('/status', async (req, res) => {
   }
 });
 
+router.get('/bls', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const DATA_DIR = path.join(__dirname, '../../data');
+    const JSON_PATH = path.join(DATA_DIR, 'bls_ideology.json');
+    
+    if (!fs.existsSync(JSON_PATH)) {
+      return res.status(404).json({ error: 'BLS data not found' });
+    }
+    
+    const data = fs.readFileSync(JSON_PATH, 'utf-8');
+    return res.json(JSON.parse(data));
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Failed to load BLS data' });
+  }
+});
+
 export default router;

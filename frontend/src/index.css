@@ -272,11 +272,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   .hide-desktop, .mobile-only-icon {
     display: none !important;
   }
-  
-  /* Remove decorative desktop icons, but allow essential action icons (.desktop-icon-allow & .collapse-arrow) */
-  svg.lucide:not(.collapse-arrow):not(.desktop-icon-allow) {
-    display: none !important;
-  }
 }
 
 /* Responsive Mobile & Desktop Tooltip Bubble */
@@ -327,3 +322,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
     transform: translate(-50%, 0);
   }
 }
+
+/* Bancada Layout */
+.responsive-bancada {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: flex-start;
+}
+@media (min-width: 768px) {
+  .responsive-bancada {
+    flex-direction: row;
+  }
+}
+

@@ -127,6 +127,8 @@ router.get('/', requireAdminAuth, async (req: AdminAuthRequest, res: Response) =
     if (sortField === 'popularName') orderBy = { popularName: sortOrder };
     else if (sortField === 'party') orderBy = { party: sortOrder };
     else if (sortField === 'state') orderBy = { state: sortOrder };
+    else if (sortField === 'birthCity') orderBy = { birthCity: sortOrder };
+    else if (sortField === 'birthState') orderBy = { birthState: sortOrder };
     else if (sortField === 'netWorth') orderBy = { netWorth: sortOrder };
     else if (sortField === 'wikipediaChecked') orderBy = { wikipediaChecked: sortOrder };
     else if (sortField === 'createdAt') orderBy = { createdAt: sortOrder };
@@ -150,6 +152,8 @@ router.get('/', requireAdminAuth, async (req: AdminAuthRequest, res: Response) =
       popularName: c.popularName,
       party: c.party,
       state: c.state,
+      birthCity: c.birthCity,
+      birthState: c.birthState,
       cargo: c.cargo?.name || 'N/A',
       status: c.status,
       photoUrl: c.photoUrl,

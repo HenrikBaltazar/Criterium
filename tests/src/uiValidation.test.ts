@@ -1341,5 +1341,52 @@ export function runUIValidationTests(): { name: string; passed: boolean; message
     results.push({ name: 'UI Validation 76: Welcome Modal & Guided Tutorial Tour Audit', passed: false, message: err.message });
   }
 
+  // Test UI 77: Integridade e Exibição da Naturalidade do Candidato (Cidade - UF de Nascimento)
+  try {
+    const lulaCandidate = SEED_CANDIDATES.find((c) => c.popularName === 'Lula');
+    const zemaCandidate = SEED_CANDIDATES.find((c) => c.popularName === 'Zema');
+
+    const lulaNaturalidadeOk = (lulaCandidate as any)?.birthCity === 'Garanhuns' && (lulaCandidate as any)?.birthState === 'PE';
+    const zemaNaturalidadeOk = (zemaCandidate as any)?.birthCity === 'Araxá' && (zemaCandidate as any)?.birthState === 'MG';
+
+    const passed = lulaNaturalidadeOk && zemaNaturalidadeOk;
+
+    results.push({
+      name: 'UI Validation 77: Integridade e Exibição da Naturalidade do Candidato (Cidade - UF de Nascimento)',
+      passed,
+      message: `Naturalidade Mapeada com Sucesso: Lula (${(lulaCandidate as any)?.birthCity} - ${(lulaCandidate as any)?.birthState}), Zema (${(zemaCandidate as any)?.birthCity} - ${(zemaCandidate as any)?.birthState})`,
+    });
+  } catch (err: any) {
+    results.push({ name: 'UI Validation 77: Candidate Naturalidade Integration Audit', passed: false, message: err.message });
+  }
+
+  // UI Validation 78: Information Page Citations & Monochrome Compliance
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const infoPageContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/InformationPage.tsx'), 'utf-8');
+    
+    const hasInfoIcon = infoPageContent.includes('<Info');
+    const hasSlide1 = infoPageContent.includes('Quem eu voto?');
+    const hasSlide2 = infoPageContent.includes('Como escolher um candidato');
+    const hasSlide3 = infoPageContent.includes('Como está o Brasil hoje');
+    
+    // Check citation formatting
+    const hasCitations = infoPageContent.includes('[1]') && infoPageContent.includes('Fontes e Citações');
+    
+    // Check strict monochrome rules in inline styles
+    const hasColors = infoPageContent.includes('color: red') || infoPageContent.includes('color: blue') || infoPageContent.includes('#FF') || infoPageContent.includes('#00F');
+
+    const passed = hasSlide1 && hasSlide2 && hasSlide3 && hasCitations && !hasColors;
+
+    results.push({
+      name: 'UI Validation 78: Information Page Slide Content, Citations, and Monochrome Strictness',
+      passed,
+      message: passed ? 'All 3 slides, citations, and monochrome constraints validated successfully' : 'Missing slides, citations, or found explicit colored hex codes in InformationPage',
+    });
+  } catch (err: any) {
+    results.push({ name: 'UI Validation 78: Information Page Audit', passed: false, message: err.message });
+  }
+
   return results;
 }
